@@ -1,0 +1,45 @@
+# Dependencies
+node_modules
+vendor
+
+# Build artifacts
+.git
+.gitignore
+.gitattributes
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# Testing
+tests
+phpunit.xml
+.phpunit.cache
+
+# Documentation
+*.md
+!README.md
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Logs
+storage/logs/*
+!storage/logs/.gitignore
+
+# Cache
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+bootstrap/cache/*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-compose.override.yml

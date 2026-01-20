@@ -1,0 +1,472 @@
+@import '/resources/css/filament/admin/tailwind.css';
+
+/* === CRM Pro Dark Admin Theme === */
+
+:root {
+    --sidebar-width: 280px;
+    --header-height: 64px;
+}
+
+/* === Force Dark Mode === */
+.fi-body {
+    @apply antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%) !important;
+}
+
+/* === Main Content Area === */
+.fi-main-ctn {
+    background: transparent !important;
+}
+
+.fi-main {
+    background: transparent !important;
+}
+
+/* === Sidebar Dark === */
+.fi-sidebar {
+    background: linear-gradient(180deg, #0f172a 0%, #020617 100%) !important;
+    border-right: 1px solid rgba(148, 163, 184, 0.1) !important;
+    box-shadow: 4px 0 24px -4px rgba(0, 0, 0, 0.3) !important;
+}
+
+.fi-sidebar-header {
+    @apply border-b border-slate-800/60 py-5 !important;
+}
+
+.fi-sidebar-nav {
+    @apply px-3 !important;
+}
+
+/* Sidebar Items */
+.fi-sidebar-item {
+    @apply rounded-xl transition-all duration-300 !important;
+}
+
+.fi-sidebar-item-button {
+    @apply rounded-xl px-3.5 py-3 text-slate-400 transition-all duration-300 !important;
+}
+
+.fi-sidebar-item-button:hover {
+    background: rgba(255, 255, 255, 0.05) !important;
+    @apply text-white !important;
+}
+
+.fi-sidebar-item-active .fi-sidebar-item-button {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(139, 92, 246, 0.1) 100%) !important;
+    border-left: 3px solid #6366f1 !important;
+    @apply text-white !important;
+}
+
+.fi-sidebar-item-icon {
+    @apply w-5 h-5 transition-transform duration-300 !important;
+}
+
+.fi-sidebar-item-button:hover .fi-sidebar-item-icon {
+    @apply scale-110 !important;
+}
+
+/* Sidebar Group */
+.fi-sidebar-group-label {
+    @apply text-[10px] font-bold uppercase tracking-widest text-slate-500 px-4 pt-6 pb-2 !important;
+}
+
+/* === Header Dark Glass === */
+.fi-topbar {
+    background: rgba(15, 23, 42, 0.8) !important;
+    backdrop-filter: blur(20px) !important;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.1) !important;
+}
+
+/* === Cards Dark === */
+.fi-section {
+    background: linear-gradient(145deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%) !important;
+    border: 1px solid rgba(148, 163, 184, 0.1) !important;
+    @apply rounded-2xl !important;
+    box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.4) !important;
+}
+
+.fi-section-header {
+    border-bottom: 1px solid rgba(148, 163, 184, 0.1) !important;
+}
+
+.fi-section-header-heading {
+    @apply text-slate-200 !important;
+}
+
+.fi-section-header-description {
+    @apply text-slate-400 !important;
+}
+
+/* === Stats Widget Dark === */
+.fi-wi-stats-overview-stat {
+    background: linear-gradient(145deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%) !important;
+    border: 1px solid rgba(148, 163, 184, 0.1) !important;
+    @apply p-5 rounded-2xl transition-all duration-300 !important;
+    box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.4) !important;
+}
+
+.fi-wi-stats-overview-stat:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.5), 0 0 30px -10px rgba(99, 102, 241, 0.2) !important;
+}
+
+.fi-wi-stats-overview-stat-value {
+    @apply text-3xl font-bold tracking-tight text-white !important;
+}
+
+.fi-wi-stats-overview-stat-label {
+    @apply text-sm font-medium text-slate-400 !important;
+}
+
+.fi-wi-stats-overview-stat-icon {
+    @apply w-12 h-12 rounded-xl !important;
+}
+
+/* === Tables Dark === */
+.fi-ta {
+    background: linear-gradient(145deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%) !important;
+    border: 1px solid rgba(148, 163, 184, 0.1) !important;
+    @apply rounded-2xl overflow-hidden !important;
+    box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.4) !important;
+}
+
+.fi-ta-header {
+    background: rgba(15, 23, 42, 0.5) !important;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.1) !important;
+}
+
+.fi-ta-header-cell {
+    @apply text-[11px] font-bold uppercase tracking-wider text-slate-400 py-4 !important;
+}
+
+.fi-ta-row {
+    @apply transition-all duration-200 border-b border-slate-800/50 !important;
+}
+
+.fi-ta-row:hover {
+    background: rgba(99, 102, 241, 0.05) !important;
+}
+
+.fi-ta-cell {
+    @apply py-4 text-slate-300 !important;
+}
+
+/* === Buttons Dark === */
+.fi-btn {
+    @apply rounded-xl font-semibold transition-all duration-300 !important;
+}
+
+.fi-btn-primary {
+    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important;
+    box-shadow: 0 4px 15px -3px rgba(99, 102, 241, 0.5) !important;
+}
+
+.fi-btn-primary:hover {
+    background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%) !important;
+    box-shadow: 0 8px 25px -3px rgba(99, 102, 241, 0.6) !important;
+    transform: translateY(-2px);
+}
+
+.fi-btn-danger {
+    background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%) !important;
+    box-shadow: 0 4px 15px -3px rgba(244, 63, 94, 0.5) !important;
+}
+
+.fi-btn-gray {
+    background: rgba(51, 65, 85, 0.8) !important;
+    border: 1px solid rgba(148, 163, 184, 0.2) !important;
+    @apply text-slate-300 !important;
+}
+
+.fi-btn-gray:hover {
+    background: rgba(71, 85, 105, 0.9) !important;
+}
+
+/* === Forms Dark === */
+.fi-input,
+.fi-select-input,
+.fi-textarea-input {
+    background: rgba(15, 23, 42, 0.6) !important;
+    border: 1px solid rgba(148, 163, 184, 0.15) !important;
+    @apply rounded-xl text-white placeholder-slate-500 transition-all duration-300 !important;
+}
+
+.fi-input:focus,
+.fi-select-input:focus,
+.fi-textarea-input:focus {
+    border-color: rgba(99, 102, 241, 0.5) !important;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15) !important;
+}
+
+.fi-fo-field-wrp-label {
+    @apply text-slate-300 !important;
+}
+
+.fi-fo-field-wrp-hint {
+    @apply text-slate-500 !important;
+}
+
+/* === Badges Dark === */
+.fi-badge {
+    @apply rounded-full px-3 py-1 font-semibold !important;
+}
+
+.fi-badge-success {
+    background: rgba(16, 185, 129, 0.15) !important;
+    color: #6ee7b7 !important;
+    border: 1px solid rgba(16, 185, 129, 0.25) !important;
+}
+
+.fi-badge-warning {
+    background: rgba(245, 158, 11, 0.15) !important;
+    color: #fcd34d !important;
+    border: 1px solid rgba(245, 158, 11, 0.25) !important;
+}
+
+.fi-badge-danger {
+    background: rgba(244, 63, 94, 0.15) !important;
+    color: #fda4af !important;
+    border: 1px solid rgba(244, 63, 94, 0.25) !important;
+}
+
+.fi-badge-primary {
+    background: rgba(99, 102, 241, 0.15) !important;
+    color: #a5b4fc !important;
+    border: 1px solid rgba(99, 102, 241, 0.25) !important;
+}
+
+.fi-badge-gray {
+    background: rgba(100, 116, 139, 0.15) !important;
+    color: #94a3b8 !important;
+    border: 1px solid rgba(100, 116, 139, 0.25) !important;
+}
+
+/* === Modal Dark === */
+.fi-modal-window {
+    background: linear-gradient(145deg, rgba(30, 41, 59, 0.98) 0%, rgba(15, 23, 42, 1) 100%) !important;
+    border: 1px solid rgba(148, 163, 184, 0.1) !important;
+    @apply rounded-2xl !important;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+}
+
+.fi-modal-header {
+    border-bottom: 1px solid rgba(148, 163, 184, 0.1) !important;
+}
+
+.fi-modal-heading {
+    @apply text-white !important;
+}
+
+.fi-modal-description {
+    @apply text-slate-400 !important;
+}
+
+/* === Notifications Dark === */
+.fi-notification {
+    background: linear-gradient(145deg, rgba(30, 41, 59, 0.98) 0%, rgba(15, 23, 42, 1) 100%) !important;
+    border: 1px solid rgba(148, 163, 184, 0.1) !important;
+    @apply rounded-2xl !important;
+    box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.4) !important;
+}
+
+.fi-notification-title {
+    @apply text-white !important;
+}
+
+.fi-notification-body {
+    @apply text-slate-400 !important;
+}
+
+/* === Dropdown Dark === */
+.fi-dropdown-panel {
+    background: linear-gradient(145deg, rgba(30, 41, 59, 0.98) 0%, rgba(15, 23, 42, 1) 100%) !important;
+    border: 1px solid rgba(148, 163, 184, 0.1) !important;
+    @apply rounded-xl !important;
+    box-shadow: 0 12px 40px -8px rgba(0, 0, 0, 0.4) !important;
+}
+
+.fi-dropdown-list-item-button {
+    @apply text-slate-300 !important;
+}
+
+.fi-dropdown-list-item-button:hover {
+    background: rgba(99, 102, 241, 0.1) !important;
+}
+
+/* === Tabs Dark === */
+.fi-tabs {
+    border-bottom: 1px solid rgba(148, 163, 184, 0.1) !important;
+}
+
+.fi-tabs-tab {
+    @apply rounded-xl transition-all duration-200 text-slate-400 !important;
+}
+
+.fi-tabs-tab:hover {
+    @apply text-white !important;
+}
+
+.fi-tabs-tab-active {
+    background: rgba(99, 102, 241, 0.15) !important;
+    @apply text-indigo-400 !important;
+}
+
+/* === Breadcrumbs Dark === */
+.fi-breadcrumbs-item {
+    @apply text-slate-400 !important;
+}
+
+.fi-breadcrumbs-item-separator {
+    @apply text-slate-600 !important;
+}
+
+/* === Avatar === */
+.fi-avatar {
+    @apply rounded-xl !important;
+}
+
+/* === Pagination Dark === */
+.fi-pagination-item {
+    background: rgba(51, 65, 85, 0.5) !important;
+    border: 1px solid rgba(148, 163, 184, 0.1) !important;
+    @apply rounded-xl text-slate-400 !important;
+}
+
+.fi-pagination-item:hover {
+    background: rgba(99, 102, 241, 0.2) !important;
+    @apply text-white !important;
+}
+
+.fi-pagination-item-active {
+    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important;
+    @apply text-white !important;
+}
+
+/* === Empty State Dark === */
+.fi-ta-empty-state {
+    @apply py-12 !important;
+}
+
+.fi-ta-empty-state-icon {
+    @apply w-12 h-12 text-slate-500 !important;
+}
+
+.fi-ta-empty-state-heading {
+    @apply text-slate-300 !important;
+}
+
+.fi-ta-empty-state-description {
+    @apply text-slate-500 !important;
+}
+
+/* === Toggle Dark === */
+.fi-toggle-button {
+    background: rgba(51, 65, 85, 0.5) !important;
+}
+
+.fi-toggle-button[aria-checked="true"] {
+    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important;
+}
+
+/* === Checkbox/Radio Dark === */
+.fi-checkbox-input,
+.fi-radio-input {
+    background: rgba(15, 23, 42, 0.6) !important;
+    border: 1px solid rgba(148, 163, 184, 0.3) !important;
+}
+
+.fi-checkbox-input:checked,
+.fi-radio-input:checked {
+    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important;
+    border-color: #6366f1 !important;
+}
+
+/* === Info List Dark === */
+.fi-in-entry-wrp {
+    border-bottom: 1px solid rgba(148, 163, 184, 0.1) !important;
+    @apply py-3.5 !important;
+}
+
+.fi-in-entry-wrp-label {
+    @apply text-slate-400 !important;
+}
+
+.fi-in-entry-wrp-label-text {
+    @apply text-slate-400 !important;
+}
+
+/* === Scrollbar Dark === */
+.fi-sidebar-nav::-webkit-scrollbar {
+    width: 4px;
+}
+
+.fi-sidebar-nav::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.fi-sidebar-nav::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 999px;
+}
+
+.fi-sidebar-nav::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* === Global Search Dark === */
+.fi-global-search-modal {
+    background: linear-gradient(145deg, rgba(30, 41, 59, 0.98) 0%, rgba(15, 23, 42, 1) 100%) !important;
+    border: 1px solid rgba(148, 163, 184, 0.1) !important;
+    @apply rounded-2xl !important;
+}
+
+.fi-global-search-input {
+    background: rgba(15, 23, 42, 0.6) !important;
+    @apply text-white rounded-xl !important;
+}
+
+/* === Loading === */
+.fi-loading-indicator {
+    @apply text-indigo-400 !important;
+}
+
+/* === Animations === */
+@keyframes fade-in-up {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fi-wi-stats-overview-stat,
+.fi-section,
+.fi-ta {
+    animation: fade-in-up 0.4s ease-out forwards;
+}
+
+.fi-wi-stats-overview-stat:nth-child(1) { animation-delay: 0.05s; }
+.fi-wi-stats-overview-stat:nth-child(2) { animation-delay: 0.1s; }
+.fi-wi-stats-overview-stat:nth-child(3) { animation-delay: 0.15s; }
+.fi-wi-stats-overview-stat:nth-child(4) { animation-delay: 0.2s; }
+
+/* === Text Colors === */
+.text-gray-500, 
+.text-gray-600,
+.text-slate-500,
+.text-slate-600 {
+    @apply text-slate-400 !important;
+}
+
+.text-gray-700,
+.text-gray-800,
+.text-gray-900,
+.text-slate-700,
+.text-slate-800,
+.text-slate-900 {
+    @apply text-slate-200 !important;
+}

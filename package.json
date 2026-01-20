@@ -1,0 +1,27 @@
+{
+    "name": "crm-system",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "dev": "vite",
+        "build": "vite build"
+    },
+    "devDependencies": {
+        "@tailwindcss/forms": "^0.5.11",
+        "@vitejs/plugin-react": "^4.2.1",
+        "autoprefixer": "^10.4.23",
+        "axios": "^1.6.2",
+        "laravel-vite-plugin": "^1.0.0",
+        "postcss": "^8.5.6",
+        "tailwindcss": "^3.4.19",
+        "vite": "^5.0.0"
+    },
+    "dependencies": {
+        "@inertiajs/react": "^1.0.14",
+        "@tailwindcss/typography": "^0.5.19",
+        "date-fns": "^4.1.0",
+        "lucide-react": "^0.562.0",
+        "react": "^18.2.0",
+        "react-dom": "^18.2.0"
+    }
+}
