@@ -1,291 +1,99 @@
-# 🚀 CRM Pro — Master Orchestrator
+# 🚀 CRM Pro
 
 <div align="center">
 
-![CRM Pro](https://img.shields.io/badge/CRM-Pro-6366f1?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0id2hpdGUiIGQ9Ik0xMiAyTDIgN2wxMCA1IDEwLTVMMTIgMnptMCAyLjY4bDYuODIgMy40MUwxMiA5LjVsLTYuODItMy40MUwxMiA0LjY4ek0yIDE3bDEwIDUgMTAtNS0xMC01LTEwIDV6Ii8+PC9zdmc+)
-![Laravel](https://img.shields.io/badge/Laravel-11-FF2D20?style=for-the-badge&logo=laravel)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?style=for-the-badge&logo=postgresql)
-![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker)
-
 **AI-Powered CRM для интеграции с Meta Business Suite и Telegram**
+
+![Laravel](https://img.shields.io/badge/Laravel-11-FF2D20?style=flat-square&logo=laravel)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?style=flat-square&logo=postgresql)
+![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=flat-square&logo=docker)
 
 </div>
 
 ---
 
-## 📋 Содержание
+## ⚡ Быстрая установка (Ubuntu)
 
-- [Быстрый старт](#-быстрый-старт)
-- [Требования](#-требования)
-- [Архитектура](#-архитектура)
-- [Конфигурация](#-конфигурация)
-- [Команды](#-команды)
-- [API](#-api)
-- [Разработка](#-разработка)
+```bash
+# Одна команда для установки
+curl -fsSL https://raw.githubusercontent.com/djbananol44-tech/crm-pro/main/install.sh | sudo bash
+```
+
+Или вручную:
+
+```bash
+# 1. Клонировать
+git clone https://github.com/djbananol44-tech/crm-pro.git /opt/crm
+cd /opt/crm
+
+# 2. Запустить
+chmod +x install.sh
+sudo ./install.sh
+```
 
 ---
 
-## ⚡ Быстрый старт
-
-### Запуск в один клик
-
-```bash
-# 1. Клонируйте репозиторий
-git clone https://github.com/your-repo/crm-pro.git
-cd crm-pro
-
-# 2. Запустите скрипт развертывания
-chmod +x deploy.sh
-./deploy.sh
-```
-
-Скрипт автоматически:
-- ✅ Проверит наличие Docker
-- ✅ Создаст `.env` файл
-- ✅ Соберёт и запустит все контейнеры
-- ✅ Выполнит миграции и сиды
-- ✅ Настроит Telegram бота
-- ✅ Выведет данные для входа
-
-### Доступ
-
-После развертывания:
+## 🔑 Доступ после установки
 
 | Сервис | URL | Логин |
 |--------|-----|-------|
-| 🌐 CRM | http://localhost:8000 | — |
-| 🔐 Админ-панель | http://localhost:8000/admin | admin@crm.test / admin123 |
-| 👤 Менеджер | http://localhost:8000/deals | manager@crm.test / manager123 |
+| 🌐 CRM | http://IP:8000 | — |
+| 🔐 Админка | http://IP:8000/admin | `admin@crm.test` / `admin123` |
 
 ---
 
-## 📋 Требования
-
-- **Docker** 24.0+
-- **Docker Compose** 2.0+
-- **Git**
-- 2GB RAM (минимум)
-- 5GB свободного места
-
----
-
-## 🏗 Архитектура
+## 📁 Структура проекта
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                        Nginx (web)                          │
-│                     Порт 8000 → 80                          │
-└──────────────────────────┬──────────────────────────────────┘
-                           │
-┌──────────────────────────┼──────────────────────────────────┐
-│                          │                                  │
-│    ┌─────────────────────▼─────────────────────┐            │
-│    │          Laravel PHP-FPM (app)            │            │
-│    │         Основное приложение               │            │
-│    └─────────────────────┬─────────────────────┘            │
-│                          │                                  │
-│    ┌─────────────────────┼─────────────────────┐            │
-│    │                     │                     │            │
-│    ▼                     ▼                     ▼            │
-│ ┌──────┐           ┌──────────┐          ┌─────────┐        │
-│ │ DB   │           │  Redis   │          │ Workers │        │
-│ │ PG16 │           │  Queue   │          │ Bot/Q   │        │
-│ └──────┘           └──────────┘          └─────────┘        │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
+crm/
+├── app/                    # Laravel приложение
+│   ├── Console/Commands/   # Artisan команды
+│   ├── Filament/           # Админ-панель
+│   ├── Http/Controllers/   # Контроллеры
+│   ├── Jobs/               # Очереди
+│   ├── Models/             # Eloquent модели
+│   └── Services/           # Бизнес-логика
+├── docker/                 # Docker конфиги
+├── resources/js/           # React компоненты
+├── docker-compose.yml      # Production конфиг
+├── deploy.sh               # Скрипт развертывания
+└── install.sh              # Скрипт установки
 ```
-
-### Сервисы Docker Compose
-
-| Сервис | Описание | Порт |
-|--------|----------|------|
-| `db` | PostgreSQL 16 | 5432 (внутренний) |
-| `redis` | Redis 7 (очереди, кэш) | 6379 (внутренний) |
-| `app` | Laravel PHP-FPM | 9000 (внутренний) |
-| `web` | Nginx | 8000:80 |
-| `queue_worker` | Laravel Queue Worker | — |
-| `bot_worker` | Telegram Bot Long Polling | — |
-| `scheduler` | Laravel Scheduler | — |
-
----
-
-## ⚙️ Конфигурация
-
-### Переменные окружения
-
-Основные настройки в `.env`:
-
-```env
-# Приложение
-APP_URL=http://localhost:8000
-APP_PORT=8000
-
-# База данных
-DB_DATABASE=crm_db
-DB_USERNAME=crm_user
-DB_PASSWORD=CrmSecurePass2024
-
-# Очереди
-QUEUE_CONNECTION=redis
-```
-
-### Настройка API ключей
-
-Все API ключи настраиваются через админ-панель:
-
-1. Войдите в `/admin`
-2. Перейдите в **Настройки**
-3. Заполните:
-   - **Meta Page ID** — ID вашей Facebook страницы
-   - **Meta Access Token** — токен с правами `pages_messaging`
-   - **Webhook Verify Token** — любая строка для верификации
-   - **Telegram Bot Token** — токен от @BotFather
-   - **Gemini API Key** — ключ для AI анализа
 
 ---
 
 ## 🛠 Команды
 
-### Docker Compose
-
 ```bash
-# Статус контейнеров
-docker-compose ps
+# Статус
+docker compose ps
 
-# Логи всех сервисов
-docker-compose logs -f
+# Логи
+docker compose logs -f
 
-# Логи конкретного сервиса
-docker-compose logs -f app
+# Диагностика
+docker compose exec app php artisan crm:check
 
 # Перезапуск
-docker-compose restart
+docker compose restart
 
-# Остановка
-docker-compose down
-
-# Полная пересборка
-docker-compose down -v
-docker-compose up -d --build
-```
-
-### Laravel Artisan
-
-```bash
-# Через Docker
-docker-compose exec app php artisan <command>
-
-# Полная диагностика
-docker-compose exec app php artisan crm:check
-
-# Настройка Telegram бота
-docker-compose exec app php artisan crm:link-bot
-
-# Синхронизация Meta
-docker-compose exec app php artisan meta:sync-now
-
-# Очистка кэша
-docker-compose exec app php artisan optimize:clear
+# Обновление
+git pull && docker compose up -d --build
 ```
 
 ---
 
-## 🔌 API
+## ⚙️ Настройка API
 
-### Webhooks
+После установки войдите в `/admin` → **Настройки** и заполните:
 
-| Endpoint | Метод | Описание |
-|----------|-------|----------|
-| `/api/webhooks/meta` | GET | Верификация Meta webhook |
-| `/api/webhooks/meta` | POST | Входящие события Meta |
-| `/api/webhooks/telegram` | POST | Входящие события Telegram |
-
-### Настройка Meta Webhook
-
-1. Перейдите в [Meta Business Suite](https://business.facebook.com)
-2. Настройки → Webhooks → Страницы
-3. URL: `https://your-domain.com/api/webhooks/meta`
-4. Verify Token: из настроек CRM
-5. Подписки: `messages`, `messaging_postbacks`
+- **Meta Page ID** — ID Facebook страницы
+- **Meta Access Token** — токен с правами `pages_messaging`
+- **Telegram Bot Token** — от @BotFather
+- **Gemini API Key** — для AI анализа (опционально)
 
 ---
 
-## 👨‍💻 Разработка
+## 📄 Лицензия
 
-### Локальная разработка (без Docker)
-
-```bash
-# Установка зависимостей
-composer install
-npm install
-
-# Настройка
-cp .env.example .env
-php artisan key:generate
-
-# Миграции
-php artisan migrate --seed
-
-# Запуск
-php artisan serve
-npm run dev
-```
-
-### Сборка фронтенда
-
-```bash
-# Разработка
-npm run dev
-
-# Продакшн
-npm run build
-```
-
----
-
-## 📊 Мониторинг
-
-### Центр управления
-
-В админ-панели доступен виджет **"Центр управления полётами"**:
-
-- 🟢 Статус всех сервисов в реальном времени
-- 📊 Статистика по сделкам
-- ⚡ Быстрые действия (очистка кэша, рестарт очередей)
-- 📝 Логи системы
-
-### Health Check
-
-```bash
-# Полная диагностика
-docker-compose exec app php artisan crm:check
-
-# Health endpoint
-curl http://localhost:8000/health
-```
-
----
-
-## 🔒 Безопасность
-
-- Все API ключи хранятся в зашифрованной таблице `settings`
-- CSRF защита для всех форм (кроме webhooks)
-- Rate limiting для API
-- Sanitization входящих данных
-- Helmet headers через Nginx
-
----
-
-## 📝 Лицензия
-
-MIT License. Смотрите [LICENSE](LICENSE) для деталей.
-
----
-
-<div align="center">
-
-**Сделано с ❤️ для автоматизации продаж**
-
-[Документация](docs/) • [Issues](issues/) • [Changelog](CHANGELOG.md)
-
-</div>
+MIT
