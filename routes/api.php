@@ -13,30 +13,59 @@ use Illuminate\Support\Facades\Route;
 | Маршруты для API. Эти маршруты загружаются RouteServiceProvider
 | и находятся в группе middleware "api".
 |
+| Rate Limits:
+|   - webhook: 300/min (Meta bursts)
+|   - api: 60/min (стандартный)
+|   - test: 10/min (защита)
+|
 */
 
-// Meta Webhooks (исключены из CSRF)
-Route::prefix('webhooks')->group(function () {
-    // Верификация webhook (GET запрос от Meta)
-    Route::get('/meta', [MetaWebhookController::class, 'verify'])
-        ->name('webhooks.meta.verify');
+// ─────────────────────────────────────────────────────────────────────────────
+// 🔗 Webhooks (Meta, Telegram)
+// ─────────────────────────────────────────────────────────────────────────────
+// Rate Limit: 300/min — высокий лимит для Meta bursts
+// CSRF: исключены
+//
+Route::prefix('webhooks')
+    ->middleware('throttle:webhook')
+    ->group(function () {
 
-    // Обработка событий (POST запрос от Meta)
-    Route::post('/meta', [MetaWebhookController::class, 'handle'])
-        ->name('webhooks.meta.handle');
+        // Meta: Верификация (GET) — без подписи, без rate limit (один запрос)
+        Route::get('/meta', [MetaWebhookController::class, 'verify'])
+            ->withoutMiddleware('throttle:webhook')
+            ->name('webhooks.meta.verify');
 
-    // Telegram Bot Webhook
-    Route::post('/telegram', [TelegramController::class, 'webhook'])
-        ->name('webhooks.telegram');
-});
+        // Meta: Обработка событий (POST) — с подписью + rate limit
+        Route::post('/meta', [MetaWebhookController::class, 'handle'])
+            ->middleware('meta.signature')
+            ->name('webhooks.meta.handle');
 
-// Тестовые маршруты (только для разработки)
-Route::prefix('test')->group(function () {
-    // Эмуляция входящего сообщения от Meta
-    Route::post('/incoming-meta', [TestWebhookController::class, 'simulateMetaIncoming'])
-        ->name('test.incoming-meta');
-    
-    // Health check
-    Route::get('/health', [TestWebhookController::class, 'healthCheck'])
-        ->name('test.health');
-});
+        // Telegram: Webhook
+        Route::post('/telegram', [TelegramController::class, 'webhook'])
+            ->name('webhooks.telegram');
+    });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 🏥 Health Check (публичный, без auth)
+// ─────────────────────────────────────────────────────────────────────────────
+Route::get('/health', [TestWebhookController::class, 'healthCheck'])
+    ->name('api.health');
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 🧪 Test Endpoints (только для разработки)
+// ─────────────────────────────────────────────────────────────────────────────
+// Rate Limit: 10/min — защита от злоупотреблений
+//
+Route::prefix('test')
+    ->middleware('throttle:test')
+    ->group(function () {
+
+        // Эмуляция входящего сообщения от Meta
+        Route::post('/incoming-meta', [TestWebhookController::class, 'simulateMetaIncoming'])
+            ->name('test.incoming-meta');
+
+        // Health check (дублируется для совместимости)
+        Route::get('/health', [TestWebhookController::class, 'healthCheck'])
+            ->withoutMiddleware('throttle:test')
+            ->name('test.health');
+    });

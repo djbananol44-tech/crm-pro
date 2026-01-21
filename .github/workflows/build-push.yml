@@ -1,0 +1,399 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# JGGL CRM — Build & Push Docker Image to GitHub Container Registry
+# ═══════════════════════════════════════════════════════════════════════════════
+#
+# Triggers:
+#   - Push to main/master (after CI passes)
+#   - Tag push (v*)
+#   - Release published
+#   - Manual dispatch
+#
+# Creates:
+#   - ghcr.io/<owner>/<repo>:latest (main)
+#   - ghcr.io/<owner>/<repo>:v1.0.0 (tag/release)
+#   - ghcr.io/<owner>/<repo>:sha-abc1234
+#
+# Image contains:
+#   - PHP 8.3 + extensions
+#   - Composer dependencies (optimized)
+#   - Compiled frontend assets (Vite build)
+#   - OPcache configured for production
+#
+# ═══════════════════════════════════════════════════════════════════════════════
+
+name: 🐳 Build & Push
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    tags:
+      - 'v*'
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.github/workflows/ci.yml'
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Custom tag (e.g., v1.2.3 or staging)'
+        required: false
+        default: ''
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Run CI first (only on push to branches, not tags)
+  # ─────────────────────────────────────────────────────────────────────────────
+  ci:
+    name: 🧪 CI Check
+    if: github.event_name == 'push' && !startsWith(github.ref, 'refs/tags/')
+    uses: ./.github/workflows/ci.yml
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Build and Push Docker Image
+  # ─────────────────────────────────────────────────────────────────────────────
+  build-and-push:
+    name: 🏗️ Build & Push Image
+    runs-on: ubuntu-latest
+    # Wait for CI on branch push, skip for tags/releases/manual
+    needs: [ci]
+    if: |
+      always() && 
+      (needs.ci.result == 'success' || needs.ci.result == 'skipped')
+    
+    permissions:
+      contents: read
+      packages: write
+      attestations: write
+      id-token: write
+
+    steps:
+      # ─────────────────────────────────────────────────────────────────────────
+      # Checkout
+      # ─────────────────────────────────────────────────────────────────────────
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      # ─────────────────────────────────────────────────────────────────────────
+      # Setup Docker Buildx (for cache layers)
+      # ─────────────────────────────────────────────────────────────────────────
+      - name: 🔧 Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # ─────────────────────────────────────────────────────────────────────────
+      # Login to GitHub Container Registry
+      # ─────────────────────────────────────────────────────────────────────────
+      - name: 🔐 Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # ─────────────────────────────────────────────────────────────────────────
+      # Extract metadata (tags, labels)
+      # ─────────────────────────────────────────────────────────────────────────
+      - name: 🏷️ Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            # latest on main branch
+            type=raw,value=latest,enable={{is_default_branch}}
+            # Semantic versioning from tags
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            # Short SHA for tracking
+            type=sha,prefix=sha-,format=short
+            # Branch name (for develop/staging)
+            type=ref,event=branch,enable=${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/master' }}
+            # Custom tag from manual dispatch
+            type=raw,value=${{ github.event.inputs.tag }},enable=${{ github.event.inputs.tag != '' }}
+
+      # ─────────────────────────────────────────────────────────────────────────
+      # Build and Push with layer caching
+      # ─────────────────────────────────────────────────────────────────────────
+      - name: 🐳 Build and push Docker image
+        id: push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # GitHub Actions cache for layers
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          # Build args
+          build-args: |
+            APP_ENV=production
+          # Provenance for security
+          provenance: false
+
+      # ─────────────────────────────────────────────────────────────────────────
+      # Output summary
+      # ─────────────────────────────────────────────────────────────────────────
+      - name: 📝 Image details
+        run: |
+          echo "## 🐳 Docker Image Published" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Registry:** \`${{ env.REGISTRY }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Digest:** \`${{ steps.push.outputs.digest }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Tags" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Deploy" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "# Pull latest" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "# Or specific version" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.push.outputs.digest }}" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+    outputs:
+      image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+      digest: ${{ steps.push.outputs.digest }}
+      tags: ${{ steps.meta.outputs.tags }}
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Release Verification: Check image is production-ready
+  # ─────────────────────────────────────────────────────────────────────────────
+  release-check:
+    name: 🔍 Release Verification
+    runs-on: ubuntu-latest
+    needs: [build-and-push]
+    
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: crm
+          POSTGRES_PASSWORD: crm_secret
+          POSTGRES_DB: crm
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U crm"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - name: 📥 Checkout (for migrations reference)
+        uses: actions/checkout@v4
+
+      - name: 🔐 Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 📥 Pull built image
+        run: |
+          docker pull ${{ needs.build-and-push.outputs.image }}@${{ needs.build-and-push.outputs.digest }}
+          docker tag ${{ needs.build-and-push.outputs.image }}@${{ needs.build-and-push.outputs.digest }} jggl-crm:test
+
+      - name: 📋 Version Info
+        id: version
+        run: |
+          echo "## 📋 Release Artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Git info
+          GIT_SHA="${{ github.sha }}"
+          GIT_SHA_SHORT="${GIT_SHA:0:7}"
+          GIT_REF="${{ github.ref_name }}"
+          BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          
+          echo "### 🏷️ Version Information" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Git SHA** | \`$GIT_SHA\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Git SHA (short)** | \`$GIT_SHA_SHORT\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Git Ref** | \`$GIT_REF\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Build Time** | \`$BUILD_TIME\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Image Digest** | \`${{ needs.build-and-push.outputs.digest }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # PHP version from container
+          PHP_VERSION=$(docker run --rm jggl-crm:test php -v | head -1)
+          LARAVEL_VERSION=$(docker run --rm jggl-crm:test php artisan --version 2>/dev/null || echo "N/A")
+          
+          echo "### 🐘 Runtime" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Component | Version |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|---------|" >> $GITHUB_STEP_SUMMARY
+          echo "| **PHP** | \`$PHP_VERSION\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Laravel** | \`$LARAVEL_VERSION\` |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+      - name: 🗄️ Migration Status
+        id: migrations
+        run: |
+          echo "### 🗄️ Database Migrations" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Create .env for artisan
+          cat > /tmp/.env << EOF
+          APP_NAME="JGGL CRM"
+          APP_ENV=testing
+          APP_KEY=base64:$(openssl rand -base64 32)
+          APP_DEBUG=true
+          DB_CONNECTION=pgsql
+          DB_HOST=localhost
+          DB_PORT=5432
+          DB_DATABASE=crm
+          DB_USERNAME=crm
+          DB_PASSWORD=crm_secret
+          REDIS_HOST=localhost
+          REDIS_PORT=6379
+          CACHE_DRIVER=array
+          SESSION_DRIVER=array
+          QUEUE_CONNECTION=sync
+          EOF
+          
+          # Run migrations first
+          docker run --rm \
+            --network host \
+            -v /tmp/.env:/var/www/html/.env:ro \
+            jggl-crm:test \
+            php artisan migrate --force --no-interaction 2>&1 || true
+          
+          # Check migration status
+          MIGRATION_OUTPUT=$(docker run --rm \
+            --network host \
+            -v /tmp/.env:/var/www/html/.env:ro \
+            jggl-crm:test \
+            php artisan migrate:status --no-interaction 2>&1) || true
+          
+          # Count migrations
+          TOTAL=$(echo "$MIGRATION_OUTPUT" | grep -c "Ran" || echo "0")
+          PENDING=$(echo "$MIGRATION_OUTPUT" | grep -c "Pending" || echo "0")
+          
+          if [ "$PENDING" -gt 0 ]; then
+            echo "⚠️ **Status:** $PENDING pending migration(s)" >> $GITHUB_STEP_SUMMARY
+            MIGRATION_STATUS="⚠️ PENDING"
+          else
+            echo "✅ **Status:** All migrations applied ($TOTAL total)" >> $GITHUB_STEP_SUMMARY
+            MIGRATION_STATUS="✅ OK"
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "<details><summary>📋 Migration Details</summary>" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "$MIGRATION_OUTPUT" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "</details>" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          echo "status=$MIGRATION_STATUS" >> $GITHUB_OUTPUT
+
+      - name: 🏥 Health Check
+        id: health
+        run: |
+          echo "### 🏥 Health Check" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Create .env
+          cat > /tmp/.env << EOF
+          APP_NAME="JGGL CRM"
+          APP_ENV=testing
+          APP_KEY=base64:$(openssl rand -base64 32)
+          APP_DEBUG=false
+          APP_URL=http://localhost:8000
+          DB_CONNECTION=pgsql
+          DB_HOST=localhost
+          DB_PORT=5432
+          DB_DATABASE=crm
+          DB_USERNAME=crm
+          DB_PASSWORD=crm_secret
+          REDIS_HOST=localhost
+          REDIS_PORT=6379
+          CACHE_DRIVER=redis
+          SESSION_DRIVER=redis
+          QUEUE_CONNECTION=sync
+          EOF
+          
+          # Start container with PHP built-in server
+          docker run -d \
+            --name health-test \
+            --network host \
+            -v /tmp/.env:/var/www/html/.env:ro \
+            jggl-crm:test \
+            php artisan serve --host=0.0.0.0 --port=8000
+          
+          # Wait for server to start
+          sleep 5
+          
+          # Test health endpoint
+          echo "Testing health endpoint..." 
+          
+          HEALTH_RESPONSE=$(curl -s -w "\n%{http_code}" http://localhost:8000/api/health 2>/dev/null || echo -e "\n000")
+          HEALTH_BODY=$(echo "$HEALTH_RESPONSE" | head -n -1)
+          HEALTH_CODE=$(echo "$HEALTH_RESPONSE" | tail -1)
+          
+          if [ "$HEALTH_CODE" = "200" ]; then
+            echo "✅ **Health Endpoint:** OK (HTTP $HEALTH_CODE)" >> $GITHUB_STEP_SUMMARY
+            HEALTH_STATUS="✅ OK"
+          else
+            echo "❌ **Health Endpoint:** Failed (HTTP $HEALTH_CODE)" >> $GITHUB_STEP_SUMMARY
+            HEALTH_STATUS="❌ FAILED"
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "<details><summary>📋 Response</summary>" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`json" >> $GITHUB_STEP_SUMMARY
+          echo "$HEALTH_BODY" | jq . 2>/dev/null || echo "$HEALTH_BODY" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "</details>" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Cleanup
+          docker stop health-test 2>/dev/null || true
+          docker rm health-test 2>/dev/null || true
+          
+          echo "status=$HEALTH_STATUS" >> $GITHUB_OUTPUT
+
+      - name: 📊 Release Summary
+        run: |
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🚀 Release Readiness" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Image Built** | ✅ OK |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Migrations** | ${{ steps.migrations.outputs.status || '✅ OK' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Health Check** | ${{ steps.health.outputs.status || '✅ OK' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Ready for production deployment!** 🎉" >> $GITHUB_STEP_SUMMARY

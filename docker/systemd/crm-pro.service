@@ -1,0 +1,55 @@
+# ═══════════════════════════════════════════════════════════════
+# 🚀 JGGL CRM — Systemd Service Unit
+# ═══════════════════════════════════════════════════════════════
+#
+# Установка:
+#   sudo cp docker/systemd/crm-pro.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable crm-pro
+#   sudo systemctl start crm-pro
+#
+# Проверка:
+#   sudo systemctl status crm-pro
+#   journalctl -u crm-pro -f
+#
+# ═══════════════════════════════════════════════════════════════
+
+[Unit]
+Description=JGGL CRM Application (Docker Compose)
+Documentation=https://github.com/your-repo/crm-pro
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/opt/crm
+
+# Путь к docker compose
+Environment="COMPOSE_FILE=docker-compose.prod.yml"
+
+# Запуск
+ExecStart=/usr/bin/docker compose -f docker-compose.prod.yml up -d --remove-orphans
+
+# Остановка
+ExecStop=/usr/bin/docker compose -f docker-compose.prod.yml down
+
+# Перезапуск
+ExecReload=/usr/bin/docker compose -f docker-compose.prod.yml restart
+
+# Таймауты
+TimeoutStartSec=300
+TimeoutStopSec=120
+
+# Перезапуск при падении
+Restart=on-failure
+RestartSec=30
+
+# Логирование
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=crm-pro
+
+[Install]
+WantedBy=multi-user.target

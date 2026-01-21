@@ -34,6 +34,7 @@ class CrmSetupCommand extends Command
         if ($this->option('fresh')) {
             if (!$this->confirm('⚠️  Внимание! Все данные будут удалены. Продолжить?', false)) {
                 $this->info('Отменено.');
+
                 return self::SUCCESS;
             }
         }
@@ -68,11 +69,11 @@ class CrmSetupCommand extends Command
         // Очистка кэша
         $this->newLine();
         $this->info('🧹 Очистка кэша...');
-        
+
         Artisan::call('config:clear');
         Artisan::call('cache:clear');
         Artisan::call('view:clear');
-        
+
         $this->info('✓ Кэш очищен');
 
         // Вывод информации для входа

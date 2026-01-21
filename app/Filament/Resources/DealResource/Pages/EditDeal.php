@@ -17,17 +17,17 @@ class EditDeal extends EditRecord
             Actions\DeleteAction::make(),
         ];
     }
-    
+
     protected function mutateFormDataBeforeSave(array $data): array
     {
         $user = auth()->user();
         $record = $this->record;
-        
+
         // Если менеджер уже назначен и пользователь не админ - сохраняем старое значение
         if ($record->manager_id !== null && !$user->isAdmin()) {
             $data['manager_id'] = $record->manager_id;
         }
-        
+
         return $data;
     }
 }

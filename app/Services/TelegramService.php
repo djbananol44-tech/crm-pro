@@ -2,17 +2,19 @@
 
 namespace App\Services;
 
+use App\Models\Deal;
 use App\Models\Setting;
 use App\Models\User;
-use App\Models\Deal;
+use Exception;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Exception;
 
 class TelegramService
 {
     protected ?string $botToken;
+
     protected string $apiUrl = 'https://api.telegram.org/bot';
+
     protected int $timeout = 10;
 
     public function __construct()
@@ -32,6 +34,7 @@ class TelegramService
     {
         if (!$this->isAvailable()) {
             Log::warning('TelegramService: Бот не настроен');
+
             return null;
         }
 
@@ -46,6 +49,7 @@ class TelegramService
 
             if ($response->successful()) {
                 Log::info('TelegramService: Сообщение отправлено', ['chat_id' => $chatId]);
+
                 return $response->json('result');
             }
 
@@ -53,10 +57,12 @@ class TelegramService
                 'chat_id' => $chatId,
                 'error' => $response->json('description') ?? 'Unknown error',
             ]);
+
             return null;
 
         } catch (Exception $e) {
             Log::error('TelegramService: Exception', ['error' => $e->getMessage()]);
+
             return null;
         }
     }
@@ -66,7 +72,9 @@ class TelegramService
      */
     public function editMessage(string $chatId, int $messageId, string $text, ?array $keyboard = null): bool
     {
-        if (!$this->isAvailable()) return false;
+        if (!$this->isAvailable()) {
+            return false;
+        }
 
         try {
             $params = [
@@ -86,6 +94,7 @@ class TelegramService
             return $response->successful();
         } catch (Exception $e) {
             Log::error('TelegramService: Edit error', ['error' => $e->getMessage()]);
+
             return false;
         }
     }
@@ -95,7 +104,9 @@ class TelegramService
      */
     public function answerCallbackQuery(string $callbackQueryId, ?string $text = null, bool $showAlert = false): bool
     {
-        if (!$this->isAvailable()) return false;
+        if (!$this->isAvailable()) {
+            return false;
+        }
 
         try {
             $params = ['callback_query_id' => $callbackQueryId];
@@ -139,9 +150,11 @@ class TelegramService
      */
     public function notifyNewMessage(User $manager, Deal $deal, string $clientName, ?string $preview = null): bool
     {
-        if (empty($manager->telegram_chat_id)) return false;
+        if (empty($manager->telegram_chat_id)) {
+            return false;
+        }
 
-        $previewText = $preview ? "\n\n💬 <i>" . mb_substr($preview, 0, 100) . "...</i>" : '';
+        $previewText = $preview ? "\n\n💬 <i>".mb_substr($preview, 0, 100).'...</i>' : '';
         $score = $deal->ai_score ? " | Score: {$deal->ai_score}" : '';
 
         $message = <<<MSG
@@ -163,7 +176,9 @@ MSG;
      */
     public function notifyNewDeal(User $manager, Deal $deal, string $clientName): bool
     {
-        if (empty($manager->telegram_chat_id)) return false;
+        if (empty($manager->telegram_chat_id)) {
+            return false;
+        }
 
         $message = <<<MSG
 🆕 <b>Новая сделка!</b>
@@ -187,7 +202,9 @@ MSG;
      */
     public function notifySlaWarning(User $manager, Deal $deal, int $minutesOverdue): bool
     {
-        if (empty($manager->telegram_chat_id)) return false;
+        if (empty($manager->telegram_chat_id)) {
+            return false;
+        }
 
         $message = <<<MSG
 ⚠️ <b>Просрочка SLA!</b>
@@ -211,7 +228,9 @@ MSG;
      */
     public function sendMyDeals(User $user): bool
     {
-        if (empty($user->telegram_chat_id)) return false;
+        if (empty($user->telegram_chat_id)) {
+            return false;
+        }
 
         $deals = Deal::with('contact')
             ->where('manager_id', $user->id)
@@ -308,6 +327,7 @@ MSG;
 
             if ($response->successful()) {
                 $bot = $response->json('result');
+
                 return [
                     'success' => true,
                     'message' => "Бот подключен: @{$bot['username']}",
@@ -318,21 +338,64 @@ MSG;
 
             return [
                 'success' => false,
-                'message' => 'Ошибка: ' . ($response->json('description') ?? 'Unknown'),
+                'message' => 'Ошибка: '.($response->json('description') ?? 'Unknown'),
             ];
 
         } catch (Exception $e) {
             return [
                 'success' => false,
-                'message' => 'Ошибка подключения: ' . $e->getMessage(),
+                'message' => 'Ошибка подключения: '.$e->getMessage(),
             ];
         }
     }
 
     /**
-     * Установить Webhook.
+     * Установить Webhook с secret_token.
      */
-    public function setWebhook(string $url): array
+    public function setWebhook(string $url, ?string $secretToken = null): array
+    {
+        if (!$this->isAvailable()) {
+            return ['success' => false, 'message' => 'Бот не настроен'];
+        }
+
+        try {
+            $params = [
+                'url' => $url,
+                'allowed_updates' => ['message', 'callback_query'],
+            ];
+
+            if ($secretToken) {
+                $params['secret_token'] = $secretToken;
+            }
+
+            $response = Http::timeout(10)
+                ->post("{$this->apiUrl}{$this->botToken}/setWebhook", $params);
+
+            if ($response->successful() && $response->json('ok')) {
+                return [
+                    'success' => true,
+                    'message' => "Webhook установлен: {$url}",
+                    'url' => $url,
+                ];
+            }
+
+            return [
+                'success' => false,
+                'message' => 'Ошибка: '.($response->json('description') ?? 'Unknown'),
+            ];
+
+        } catch (Exception $e) {
+            return [
+                'success' => false,
+                'message' => 'Ошибка: '.$e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Получить информацию о текущем Webhook.
+     */
+    public function getWebhookInfo(): array
     {
         if (!$this->isAvailable()) {
             return ['success' => false, 'message' => 'Бот не настроен'];
@@ -340,28 +403,25 @@ MSG;
 
         try {
             $response = Http::timeout(10)
-                ->post("{$this->apiUrl}{$this->botToken}/setWebhook", [
-                    'url' => $url,
-                    'allowed_updates' => ['message', 'callback_query'],
-                ]);
+                ->get("{$this->apiUrl}{$this->botToken}/getWebhookInfo");
 
-            if ($response->successful() && $response->json('ok')) {
+            if ($response->successful()) {
+                $info = $response->json('result');
+
                 return [
                     'success' => true,
-                    'message' => "Webhook установлен: {$url}",
+                    'url' => $info['url'] ?? '',
+                    'has_custom_certificate' => $info['has_custom_certificate'] ?? false,
+                    'pending_update_count' => $info['pending_update_count'] ?? 0,
+                    'last_error_date' => $info['last_error_date'] ?? null,
+                    'last_error_message' => $info['last_error_message'] ?? null,
                 ];
             }
 
-            return [
-                'success' => false,
-                'message' => 'Ошибка: ' . ($response->json('description') ?? 'Unknown'),
-            ];
+            return ['success' => false, 'message' => 'Ошибка получения информации'];
 
         } catch (Exception $e) {
-            return [
-                'success' => false,
-                'message' => 'Ошибка: ' . $e->getMessage(),
-            ];
+            return ['success' => false, 'message' => 'Ошибка: '.$e->getMessage()];
         }
     }
 
@@ -383,8 +443,170 @@ MSG;
                 'message' => $response->successful() ? 'Webhook удалён' : 'Ошибка удаления',
             ];
         } catch (Exception $e) {
-            return ['success' => false, 'message' => 'Ошибка: ' . $e->getMessage()];
+            return ['success' => false, 'message' => 'Ошибка: '.$e->getMessage()];
         }
+    }
+
+    /**
+     * Валидировать токен и автоматически настроить Telegram.
+     * Вызывается при сохранении токена в Settings.
+     */
+    public static function validateAndSetup(string $token): array
+    {
+        $apiUrl = 'https://api.telegram.org/bot';
+
+        // 1. Валидация токена через getMe
+        try {
+            $response = Http::timeout(10)->get("{$apiUrl}{$token}/getMe");
+
+            if (!$response->successful() || !$response->json('ok')) {
+                $error = $response->json('description') ?? 'Неверный токен';
+                self::updateStatus('error', $error);
+
+                return [
+                    'success' => false,
+                    'message' => "Ошибка валидации: {$error}",
+                ];
+            }
+
+            $bot = $response->json('result');
+            $botUsername = $bot['username'] ?? 'unknown';
+
+        } catch (Exception $e) {
+            self::updateStatus('error', 'Сетевая ошибка: '.$e->getMessage());
+
+            return [
+                'success' => false,
+                'message' => 'Ошибка подключения: '.$e->getMessage(),
+            ];
+        }
+
+        // 2. Определяем режим (webhook/polling)
+        $mode = Setting::get('telegram_mode', 'polling');
+        $webhookUrl = '';
+
+        if ($mode === 'webhook') {
+            // Генерируем secret_token
+            $secretToken = bin2hex(random_bytes(32));
+            Setting::set('telegram_webhook_secret', $secretToken);
+
+            // Формируем webhook URL
+            $appUrl = rtrim(config('app.url'), '/');
+            $webhookUrl = "{$appUrl}/api/webhooks/telegram";
+
+            // 3. Устанавливаем webhook
+            try {
+                $webhookResponse = Http::timeout(10)
+                    ->post("{$apiUrl}{$token}/setWebhook", [
+                        'url' => $webhookUrl,
+                        'secret_token' => $secretToken,
+                        'allowed_updates' => ['message', 'callback_query'],
+                    ]);
+
+                if (!$webhookResponse->successful() || !$webhookResponse->json('ok')) {
+                    $error = $webhookResponse->json('description') ?? 'Не удалось установить webhook';
+                    self::updateStatus('error', $error);
+
+                    return [
+                        'success' => false,
+                        'message' => "Токен валидный, но webhook не установлен: {$error}",
+                        'bot_username' => $botUsername,
+                    ];
+                }
+
+                Setting::set('telegram_webhook_url', $webhookUrl);
+
+            } catch (Exception $e) {
+                self::updateStatus('error', 'Ошибка установки webhook: '.$e->getMessage());
+
+                return [
+                    'success' => false,
+                    'message' => 'Ошибка установки webhook: '.$e->getMessage(),
+                    'bot_username' => $botUsername,
+                ];
+            }
+        } else {
+            // Polling mode — удаляем webhook если был
+            try {
+                Http::timeout(10)->post("{$apiUrl}{$token}/deleteWebhook");
+            } catch (Exception $e) {
+                // Игнорируем
+            }
+            Setting::set('telegram_webhook_url', '');
+            Setting::set('telegram_webhook_secret', '');
+        }
+
+        // 4. Сохраняем успешный статус
+        self::updateStatus('ok', null, $botUsername, $webhookUrl);
+
+        return [
+            'success' => true,
+            'message' => $mode === 'webhook'
+                ? "✅ Бот @{$botUsername} активирован (Webhook: {$webhookUrl})"
+                : "✅ Бот @{$botUsername} активирован (Polling mode)",
+            'bot_username' => $botUsername,
+            'mode' => $mode,
+            'webhook_url' => $webhookUrl,
+        ];
+    }
+
+    /**
+     * Обновить статус интеграции Telegram.
+     */
+    protected static function updateStatus(string $status, ?string $error = null, ?string $botUsername = null, ?string $webhookUrl = null): void
+    {
+        Setting::set('telegram_status', $status);
+        Setting::set('telegram_last_check_at', now()->toISOString());
+        Setting::set('telegram_last_error', $error);
+
+        if ($botUsername) {
+            Setting::set('telegram_bot_username', $botUsername);
+        }
+        if ($webhookUrl !== null) {
+            Setting::set('telegram_webhook_url', $webhookUrl);
+        }
+    }
+
+    /**
+     * Получить текущий статус интеграции.
+     */
+    public static function getStatus(): array
+    {
+        return [
+            'status' => Setting::get('telegram_status', 'disabled'),
+            'last_check_at' => Setting::get('telegram_last_check_at'),
+            'last_error' => Setting::get('telegram_last_error'),
+            'bot_username' => Setting::get('telegram_bot_username'),
+            'webhook_url' => Setting::get('telegram_webhook_url'),
+            'mode' => Setting::get('telegram_mode', 'polling'),
+        ];
+    }
+
+    /**
+     * Проверить текущее соединение и обновить статус.
+     */
+    public function checkAndUpdateStatus(): array
+    {
+        $result = $this->testConnection();
+
+        if ($result['success']) {
+            $webhookInfo = $this->getWebhookInfo();
+            $webhookUrl = $webhookInfo['url'] ?? '';
+
+            self::updateStatus(
+                'ok',
+                null,
+                $result['bot_username'] ?? null,
+                $webhookUrl
+            );
+
+            $result['webhook_url'] = $webhookUrl;
+            $result['mode'] = Setting::get('telegram_mode', 'polling');
+        } else {
+            self::updateStatus('error', $result['message']);
+        }
+
+        return $result;
     }
 
     /**
@@ -398,7 +620,7 @@ MSG;
             ->whereIn('status', ['New', 'In Progress'])
             ->where(function ($q) {
                 $q->whereNull('last_manager_response_at')
-                  ->orWhereColumn('last_client_message_at', '>', 'last_manager_response_at');
+                    ->orWhereColumn('last_client_message_at', '>', 'last_manager_response_at');
             })
             ->where('last_client_message_at', '<', now()->subMinutes(30))
             ->get();
@@ -419,9 +641,9 @@ MSG;
             // Если прошло больше часа — пингуем админов
             if ($minutesOverdue > 60) {
                 $this->notifyAdmins(
-                    "⚠️ Критическая просрочка!\n\n" .
-                    "Сделка #{$deal->id}\n" .
-                    "Менеджер: {$deal->manager->name}\n" .
+                    "⚠️ Критическая просрочка!\n\n".
+                    "Сделка #{$deal->id}\n".
+                    "Менеджер: {$deal->manager->name}\n".
                     "Ожидание: {$minutesOverdue} мин."
                 );
             }
@@ -435,7 +657,7 @@ MSG;
      */
     public function generateAuthCode(User $user): string
     {
-        $code = strtoupper(substr(md5($user->id . time() . rand()), 0, 6));
+        $code = strtoupper(substr(md5($user->id.time().rand()), 0, 6));
 
         // Сохраняем код в кэше на 10 минут
         cache()->put("telegram_auth_{$code}", $user->id, 600);
@@ -457,6 +679,7 @@ MSG;
         $user = User::find($userId);
         if ($user) {
             $user->update(['telegram_chat_id' => $chatId]);
+
             return $user;
         }
 

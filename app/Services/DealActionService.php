@@ -2,21 +2,23 @@
 
 namespace App\Services;
 
+use App\Models\ActivityLog;
 use App\Models\Deal;
 use App\Models\User;
-use App\Models\ActivityLog;
 use Illuminate\Support\Facades\Log;
 
 /**
  * Унифицированный сервис действий над сделками.
- * 
+ *
  * Используется как из Filament (CRM), так и из Telegram бота.
  * Обеспечивает единую логику для всех операций.
  */
 class DealActionService
 {
     protected AiAnalysisService $aiService;
+
     protected TelegramService $telegram;
+
     protected MetaApiService $metaApi;
 
     public function __construct(
@@ -73,10 +75,10 @@ class DealActionService
     public function closeDeal(Deal $deal, User $actor, ?string $comment = null): array
     {
         $oldStatus = $deal->status;
-        
+
         $updateData = ['status' => 'Closed'];
         if ($comment) {
-            $updateData['comment'] = ($deal->comment ? $deal->comment . "\n\n" : '') . "[Закрыто] " . $comment;
+            $updateData['comment'] = ($deal->comment ? $deal->comment."\n\n" : '').'[Закрыто] '.$comment;
         }
 
         $deal->update($updateData);
@@ -147,7 +149,7 @@ class DealActionService
             }
 
             $messages = $this->metaApi->getMessages($conversationId);
-            
+
             if (empty($messages)) {
                 return [
                     'success' => false,
@@ -187,7 +189,7 @@ class DealActionService
 
             return [
                 'success' => false,
-                'message' => '❌ Ошибка AI-анализа: ' . $e->getMessage(),
+                'message' => '❌ Ошибка AI-анализа: '.$e->getMessage(),
             ];
         }
     }
@@ -202,11 +204,11 @@ class DealActionService
             'status' => $deal->status === 'New' ? 'In Progress' : $deal->status,
         ]);
 
-        $this->logActivity($deal, $actor, 'reminder', 'Установил напоминание на ' . $reminderAt->format('d.m.Y H:i'));
+        $this->logActivity($deal, $actor, 'reminder', 'Установил напоминание на '.$reminderAt->format('d.m.Y H:i'));
 
         return [
             'success' => true,
-            'message' => '⏰ Напоминание установлено на ' . $reminderAt->format('d.m.Y H:i'),
+            'message' => '⏰ Напоминание установлено на '.$reminderAt->format('d.m.Y H:i'),
             'deal' => $deal->fresh(),
         ];
     }
@@ -217,7 +219,7 @@ class DealActionService
     public function changeStatus(Deal $deal, User $actor, string $newStatus): array
     {
         $oldStatus = $deal->status;
-        
+
         if ($oldStatus === $newStatus) {
             return [
                 'success' => false,

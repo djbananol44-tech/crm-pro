@@ -5,14 +5,26 @@ namespace App\Services;
 use App\Models\Setting;
 use App\Models\User;
 use App\Notifications\MetaApiErrorNotification;
+use Exception;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
-use Illuminate\Http\Client\RequestException;
-use Exception;
 
 class MetaApiService
 {
+    /**
+     * ═══════════════════════════════════════════════════════════════════════════
+     * ПОЛИТИКА ХРАНЕНИЯ СООБЩЕНИЙ
+     * ═══════════════════════════════════════════════════════════════════════════
+     *
+     * Meta Platform Policy ограничивает доступ к истории сообщений.
+     * Система хранит и показывает только последние 20 сообщений на беседу.
+     *
+     * @see https://developers.facebook.com/docs/messenger-platform/policy/
+     */
+    public const MAX_MESSAGES_PER_CONVERSATION = 20;
+
     /**
      * Базовый URL Graph API
      */
@@ -48,8 +60,8 @@ class MetaApiService
     /**
      * Получить список бесед страницы.
      *
-     * @param string|null $platform Платформа: 'messenger' или 'instagram' (null = все)
-     * @return array
+     * @param  string|null  $platform  Платформа: 'messenger' или 'instagram' (null = все)
+     *
      * @throws Exception
      */
     public function getConversations(?string $platform = null): array
@@ -63,9 +75,9 @@ class MetaApiService
 
         try {
             $endpoint = "{$this->baseUrl}/{$this->pageId}/conversations";
-            
+
             $params = [
-                'fields' => 'id,updated_time,participants,link',
+                'fields' => 'id,updated_time,participants,link,labels',
                 'access_token' => $this->accessToken,
             ];
 
@@ -83,7 +95,7 @@ class MetaApiService
             }
 
             $data = $response->json();
-            
+
             Log::info('MetaApiService: Получены беседы', [
                 'count' => count($data['data'] ?? []),
             ]);
@@ -94,33 +106,49 @@ class MetaApiService
             Log::error('MetaApiService: Ошибка HTTP запроса getConversations', [
                 'message' => $e->getMessage(),
             ]);
-            throw new Exception('Ошибка при получении списка бесед: ' . $e->getMessage());
+
+            throw new Exception('Ошибка при получении списка бесед: '.$e->getMessage());
         }
     }
 
     /**
      * Получить сообщения беседы.
      *
-     * @param string $conversationId ID беседы
-     * @param int $limit Количество сообщений (по умолчанию 20)
-     * @return array
+     * ВАЖНО: Система ограничивает хранение до MAX_MESSAGES_PER_CONVERSATION (20).
+     * Это политика Meta Platform — глубокая история недоступна.
+     *
+     * @param  string  $conversationId  ID беседы
+     * @param  int  $limit  Запрашиваемое количество (принудительно ≤ MAX_MESSAGES_PER_CONVERSATION)
+     *
      * @throws Exception
      */
     public function getMessages(string $conversationId, int $limit = 20): array
     {
         $this->validateCredentials();
 
+        // Жёсткий лимит — не запрашиваем больше чем разрешено политикой
+        $effectiveLimit = min($limit, self::MAX_MESSAGES_PER_CONVERSATION);
+
+        if ($limit > self::MAX_MESSAGES_PER_CONVERSATION) {
+            Log::warning('MetaApiService: Запрошено больше сообщений чем разрешено политикой', [
+                'conversation_id' => $conversationId,
+                'requested' => $limit,
+                'effective' => $effectiveLimit,
+                'max_allowed' => self::MAX_MESSAGES_PER_CONVERSATION,
+            ]);
+        }
+
         Log::info('MetaApiService: Запрос сообщений беседы', [
             'conversation_id' => $conversationId,
-            'limit' => $limit,
+            'limit' => $effectiveLimit,
         ]);
 
         try {
             $endpoint = "{$this->baseUrl}/{$conversationId}/messages";
-            
+
             $params = [
                 'fields' => 'id,created_time,from,to,message',
-                'limit' => $limit,
+                'limit' => $effectiveLimit,
                 'access_token' => $this->accessToken,
             ];
 
@@ -133,28 +161,48 @@ class MetaApiService
             }
 
             $data = $response->json();
+            $messages = $data['data'] ?? [];
+
+            // Дополнительная гарантия — обрезаем если API вернул больше
+            if (count($messages) > self::MAX_MESSAGES_PER_CONVERSATION) {
+                $messages = array_slice($messages, 0, self::MAX_MESSAGES_PER_CONVERSATION);
+                Log::warning('MetaApiService: API вернул больше сообщений чем запрошено, обрезано', [
+                    'conversation_id' => $conversationId,
+                    'returned' => count($data['data']),
+                    'kept' => count($messages),
+                ]);
+            }
 
             Log::info('MetaApiService: Получены сообщения', [
                 'conversation_id' => $conversationId,
-                'count' => count($data['data'] ?? []),
+                'count' => count($messages),
             ]);
 
-            return $data['data'] ?? [];
+            return $messages;
 
         } catch (RequestException $e) {
             Log::error('MetaApiService: Ошибка HTTP запроса getMessages', [
                 'conversation_id' => $conversationId,
                 'message' => $e->getMessage(),
             ]);
-            throw new Exception('Ошибка при получении сообщений: ' . $e->getMessage());
+
+            throw new Exception('Ошибка при получении сообщений: '.$e->getMessage());
         }
+    }
+
+    /**
+     * Получить максимально допустимое количество сообщений.
+     */
+    public static function getMaxMessagesLimit(): int
+    {
+        return self::MAX_MESSAGES_PER_CONVERSATION;
     }
 
     /**
      * Получить профиль пользователя по PSID.
      *
-     * @param string $psid Page Scoped User ID
-     * @return array
+     * @param  string  $psid  Page Scoped User ID
+     *
      * @throws Exception
      */
     public function getUserProfile(string $psid): array
@@ -167,7 +215,7 @@ class MetaApiService
 
         try {
             $endpoint = "{$this->baseUrl}/{$psid}";
-            
+
             $params = [
                 'fields' => 'first_name,last_name,name,profile_pic',
                 'access_token' => $this->accessToken,
@@ -195,17 +243,18 @@ class MetaApiService
                 'psid' => $psid,
                 'message' => $e->getMessage(),
             ]);
-            throw new Exception('Ошибка при получении профиля пользователя: ' . $e->getMessage());
+
+            throw new Exception('Ошибка при получении профиля пользователя: '.$e->getMessage());
         }
     }
 
     /**
      * Отправить сообщение пользователю.
      *
-     * @param string $psid Page Scoped User ID
-     * @param string $message Текст сообщения
-     * @param string|null $tag Message Tag для отправки вне 24-часового окна
-     * @return array
+     * @param  string  $psid  Page Scoped User ID
+     * @param  string  $message  Текст сообщения
+     * @param  string|null  $tag  Message Tag для отправки вне 24-часового окна
+     *
      * @throws Exception
      */
     public function sendMessage(string $psid, string $message, ?string $tag = null): array
@@ -257,7 +306,8 @@ class MetaApiService
                 'psid' => $psid,
                 'message' => $e->getMessage(),
             ]);
-            throw new Exception('Ошибка при отправке сообщения: ' . $e->getMessage());
+
+            throw new Exception('Ошибка при отправке сообщения: '.$e->getMessage());
         }
     }
 
@@ -282,6 +332,7 @@ class MetaApiService
 
             if ($response->successful()) {
                 $data = $response->json();
+
                 return [
                     'success' => true,
                     'message' => "Подключено к странице: {$data['name']}",
@@ -291,6 +342,7 @@ class MetaApiService
             }
 
             $error = $response->json('error.message') ?? 'Неизвестная ошибка';
+
             return [
                 'success' => false,
                 'message' => "Ошибка: {$error}",
@@ -299,7 +351,7 @@ class MetaApiService
         } catch (Exception $e) {
             return [
                 'success' => false,
-                'message' => 'Ошибка подключения: ' . $e->getMessage(),
+                'message' => 'Ошибка подключения: '.$e->getMessage(),
             ];
         }
     }
@@ -323,8 +375,8 @@ class MetaApiService
     /**
      * Обработка ошибок API.
      *
-     * @param \Illuminate\Http\Client\Response $response
-     * @param string $method
+     * @param  \Illuminate\Http\Client\Response  $response
+     *
      * @throws Exception
      */
     protected function handleApiError($response, string $method): void
@@ -363,6 +415,7 @@ class MetaApiService
 
             if ($admins->isEmpty()) {
                 Log::warning('MetaApiService: Нет администраторов для уведомления');
+
                 return;
             }
 
@@ -382,9 +435,6 @@ class MetaApiService
 
     /**
      * Определить платформу по данным беседы.
-     *
-     * @param array $conversation
-     * @return string
      */
     public function detectPlatform(array $conversation): string
     {
@@ -399,14 +449,11 @@ class MetaApiService
 
     /**
      * Извлечь PSID участника (не страницы) из беседы.
-     *
-     * @param array $conversation
-     * @return string|null
      */
     public function extractParticipantPsid(array $conversation): ?string
     {
         $participants = $conversation['participants']['data'] ?? [];
-        
+
         foreach ($participants as $participant) {
             // Участник, который не является страницей
             if (isset($participant['id']) && $participant['id'] !== $this->pageId) {
@@ -418,14 +465,53 @@ class MetaApiService
     }
 
     /**
-     * Сформировать ссылку на беседу.
+     * Сформировать ссылку на беседу в Meta Business Suite.
      *
-     * @param string $conversationId
-     * @return string
+     * @param  string  $conversationId  ID беседы
+     * @param  string  $platform  Платформа: 'messenger' или 'instagram'
+     * @param  string|null  $pageId  Page ID (если не указан, берётся из настроек)
      */
-    public function buildConversationLink(string $conversationId): string
+    public function buildConversationLink(string $conversationId, string $platform = 'messenger', ?string $pageId = null): string
     {
-        return "https://www.facebook.com/messages/t/{$conversationId}";
+        $pageId = $pageId ?: $this->pageId;
+
+        // Если нет page_id, используем fallback ссылку
+        if (empty($pageId)) {
+            return "https://www.facebook.com/messages/t/{$conversationId}";
+        }
+
+        // Строим корректную ссылку на Meta Business Suite
+        $baseUrl = 'https://business.facebook.com/latest/inbox/all';
+        $params = [
+            'asset_id' => $pageId,
+            'selected_item_id' => $conversationId,
+        ];
+
+        if ($platform === 'instagram') {
+            $params['mailbox_id'] = 'instagram';
+        }
+
+        return $baseUrl.'?'.http_build_query($params);
+    }
+
+    /**
+     * Извлечь labels/теги из данных беседы Meta API.
+     *
+     * @param  array  $conversationData  Данные беседы из API
+     * @return array|null Массив лейблов или null
+     */
+    public function extractLabels(array $conversationData): ?array
+    {
+        if (empty($conversationData['labels']['data'])) {
+            return null;
+        }
+
+        return collect($conversationData['labels']['data'])
+            ->map(fn ($label) => [
+                'id' => $label['id'] ?? null,
+                'name' => $label['name'] ?? 'Unknown',
+            ])
+            ->toArray();
     }
 
     /**

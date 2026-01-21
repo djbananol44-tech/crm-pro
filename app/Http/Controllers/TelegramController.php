@@ -3,29 +3,37 @@
 namespace App\Http\Controllers;
 
 use App\Models\Deal;
+use App\Models\Setting;
+use App\Models\SystemLog;
 use App\Models\User;
-use App\Models\WebhookLog;
-use App\Services\TelegramService;
 use App\Services\AiAnalysisService;
 use App\Services\MetaApiService;
-use Illuminate\Http\Request;
+use App\Services\TelegramService;
+use App\Services\WebhookIdempotencyService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
 class TelegramController extends Controller
 {
     protected TelegramService $telegram;
+
     protected AiAnalysisService $aiService;
+
     protected MetaApiService $metaApi;
+
+    protected WebhookIdempotencyService $idempotency;
 
     public function __construct(
         TelegramService $telegram,
         AiAnalysisService $aiService,
-        MetaApiService $metaApi
+        MetaApiService $metaApi,
+        WebhookIdempotencyService $idempotency
     ) {
         $this->telegram = $telegram;
         $this->aiService = $aiService;
         $this->metaApi = $metaApi;
+        $this->idempotency = $idempotency;
     }
 
     /**
@@ -33,49 +41,68 @@ class TelegramController extends Controller
      */
     public function webhook(Request $request): JsonResponse
     {
+        // Проверка secret_token из заголовка X-Telegram-Bot-Api-Secret-Token
+        $secretToken = Setting::get('telegram_webhook_secret');
+        $headerToken = $request->header('X-Telegram-Bot-Api-Secret-Token');
+
+        if ($secretToken && $headerToken !== $secretToken) {
+            Log::warning('TelegramController: Invalid secret_token', [
+                'ip' => $request->ip(),
+                'header_present' => !empty($headerToken),
+            ]);
+
+            SystemLog::log('telegram', 'warning', 'Telegram Webhook: неверный secret_token', [
+                'ip' => $request->ip(),
+            ]);
+
+            return response()->json(['error' => 'Forbidden'], 403);
+        }
+
         $update = $request->all();
-        
+
+        // Проверка идемпотентности
+        if ($this->idempotency->isDuplicate('telegram', $update)) {
+            Log::info('TelegramController: Дубликат update, пропускаем', [
+                'update_id' => $update['update_id'] ?? null,
+            ]);
+
+            return response()->json(['ok' => true, 'status' => 'duplicate']);
+        }
+
         // Определяем тип события
         $eventType = match (true) {
             isset($update['callback_query']) => 'callback_query',
             isset($update['message']['text']) => 'message',
             default => 'unknown',
         };
-        
-        // Логируем входящий вебхук
-        $webhookLog = WebhookLog::logIncoming(
-            source: 'telegram',
-            eventType: $eventType,
-            payload: $update,
-            ip: $request->ip()
-        );
+
+        // Отмечаем как обработанное
+        $this->idempotency->markAsProcessed('telegram', $update, $request->ip());
 
         Log::info('TelegramController: Webhook received', [
             'update_id' => $update['update_id'] ?? null,
-            'log_id' => $webhookLog->id,
         ]);
 
         try {
             // Обработка callback_query (нажатие на inline кнопки)
             if (isset($update['callback_query'])) {
                 $this->handleCallbackQuery($update['callback_query']);
-                $webhookLog->markProcessed(200, 'callback_query processed');
+
                 return response()->json(['ok' => true]);
             }
 
             // Обработка текстовых команд
             if (isset($update['message']['text'])) {
                 $this->handleMessage($update['message']);
-                $webhookLog->markProcessed(200, 'message processed');
+
                 return response()->json(['ok' => true]);
             }
 
-            $webhookLog->markProcessed(200, 'ignored');
             return response()->json(['ok' => true]);
-            
+
         } catch (\Exception $e) {
             Log::error('TelegramController: Error processing webhook', ['error' => $e->getMessage()]);
-            $webhookLog->markProcessed(500, null, $e->getMessage());
+
             return response()->json(['ok' => true]);
         }
     }
@@ -100,6 +127,7 @@ class TelegramController extends Controller
 
         if (!$user) {
             $this->telegram->answerCallbackQuery($callbackId, '❌ Вы не авторизованы в CRM', true);
+
             return;
         }
 
@@ -112,6 +140,7 @@ class TelegramController extends Controller
 
             if (!$deal) {
                 $this->telegram->answerCallbackQuery($callbackId, '❌ Сделка не найдена', true);
+
                 return;
             }
 
@@ -134,6 +163,7 @@ class TelegramController extends Controller
         if ($deal->manager_id !== null && $deal->manager_id !== $user->id) {
             $managerName = $deal->manager?->name ?? 'Другой менеджер';
             $this->telegram->answerCallbackQuery($callbackId, "❌ Сделка уже у: {$managerName}", true);
+
             return;
         }
 
@@ -185,6 +215,7 @@ MSG;
 
         if (!$this->aiService->isAvailable()) {
             $this->telegram->sendMessage($chatId, '❌ AI-сервис недоступен. Проверьте настройки Gemini API.');
+
             return;
         }
 
@@ -197,6 +228,7 @@ MSG;
 
             if (empty($messages)) {
                 $this->telegram->sendMessage($chatId, "❌ Нет сообщений для анализа сделки #{$deal->id}");
+
                 return;
             }
 
@@ -234,6 +266,7 @@ MSG;
         // Проверяем права: только свои сделки или админ
         if ($deal->manager_id !== null && $deal->manager_id !== $user->id && !$user->isAdmin()) {
             $this->telegram->answerCallbackQuery($callbackId, '❌ Это не ваша сделка', true);
+
             return;
         }
 
@@ -285,12 +318,14 @@ MSG;
         // Команда /start — показываем приветствие и инструкцию
         if ($text === '/start') {
             $this->handleStart($chatId, $user);
+
             return;
         }
 
         // Проверка кода авторизации (6 символов)
         if (preg_match('/^[A-Z0-9]{6}$/', strtoupper($text))) {
             $this->handleAuthCode($chatId, strtoupper($text));
+
             return;
         }
 
@@ -306,24 +341,27 @@ MSG;
 
 Ваш Chat ID: <code>{$chatId}</code>
 MSG);
+
             return;
         }
 
         // Команда /me — список активных сделок
         if ($text === '/me') {
             $this->telegram->sendMyDeals($user);
+
             return;
         }
 
         // Команда /help
         if ($text === '/help') {
             $this->handleHelp($chatId, $user);
+
             return;
         }
 
         // Неизвестная команда
         if (str_starts_with($text, '/')) {
-            $this->telegram->sendMessage($chatId, "⚠️ Неизвестная команда. Введите /help для справки.");
+            $this->telegram->sendMessage($chatId, '⚠️ Неизвестная команда. Введите /help для справки.');
         }
     }
 
@@ -407,7 +445,7 @@ MSG;
 /help — справка
 MSG);
         } else {
-            $this->telegram->sendMessage($chatId, <<<MSG
+            $this->telegram->sendMessage($chatId, <<<'MSG'
 ❌ <b>Неверный или устаревший код</b>
 
 Код действителен 10 минут. Попробуйте получить новый код в профиле CRM.

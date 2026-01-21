@@ -21,6 +21,7 @@ class TelegramSetWebhookCommand extends Command
         if (empty($botToken)) {
             $this->error('❌ Telegram Bot Token не настроен!');
             $this->line('Установите его в админ-панели: Настройки → Telegram');
+
             return Command::FAILURE;
         }
 
@@ -35,6 +36,7 @@ class TelegramSetWebhookCommand extends Command
         }
 
         $this->error("Неизвестное действие: {$action}");
+
         return Command::FAILURE;
     }
 
@@ -51,7 +53,7 @@ class TelegramSetWebhookCommand extends Command
 
         if ($response->successful() && $response->json('ok')) {
             $this->info('✅ Webhook успешно установлен!');
-            
+
             $this->newLine();
             $this->table(['Параметр', 'Значение'], [
                 ['Webhook URL', $webhookUrl],
@@ -63,6 +65,7 @@ class TelegramSetWebhookCommand extends Command
 
         $this->error('❌ Ошибка установки webhook:');
         $this->error($response->json('description') ?? 'Unknown error');
+
         return Command::FAILURE;
     }
 
@@ -74,11 +77,13 @@ class TelegramSetWebhookCommand extends Command
 
         if ($response->successful() && $response->json('ok')) {
             $this->info('✅ Webhook удалён!');
+
             return Command::SUCCESS;
         }
 
         $this->error('❌ Ошибка удаления webhook:');
         $this->error($response->json('description') ?? 'Unknown error');
+
         return Command::FAILURE;
     }
 }

@@ -15,12 +15,14 @@ class SendSlaPings implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public int $tries = 1;
+
     public int $timeout = 60;
 
     public function handle(TelegramService $telegram): void
     {
         if (!$telegram->isAvailable()) {
             Log::info('SendSlaPings: Telegram не настроен, пропуск');
+
             return;
         }
 

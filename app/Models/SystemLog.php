@@ -97,6 +97,11 @@ class SystemLog extends Model
         return static::log('queue', $level, $message, $context);
     }
 
+    public static function ai(string $level, string $message, array $context = []): self
+    {
+        return static::log('ai', $level, $message, $context);
+    }
+
     // ─────────────────────────────────────────────────────────────
     // Scopes
     // ─────────────────────────────────────────────────────────────
@@ -127,7 +132,7 @@ class SystemLog extends Model
 
     public function getLevelColorAttribute(): string
     {
-        return match($this->level) {
+        return match ($this->level) {
             'debug' => 'gray',
             'info' => 'primary',
             'warning' => 'warning',
@@ -139,7 +144,7 @@ class SystemLog extends Model
 
     public function getServiceIconAttribute(): string
     {
-        return match($this->service) {
+        return match ($this->service) {
             'telegram' => '🤖',
             'meta' => '📘',
             'api' => '🔗',

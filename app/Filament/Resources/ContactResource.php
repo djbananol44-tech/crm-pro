@@ -15,13 +15,13 @@ class ContactResource extends Resource
     protected static ?string $model = Contact::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-users';
-    
+
     protected static ?string $navigationLabel = 'Контакты';
-    
+
     protected static ?string $modelLabel = 'Контакт';
-    
+
     protected static ?string $pluralModelLabel = 'Контакты';
-    
+
     protected static ?string $navigationGroup = 'Данные';
 
     public static function form(Form $form): Form

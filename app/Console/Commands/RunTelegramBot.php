@@ -11,9 +11,11 @@ use Illuminate\Support\Facades\Log;
 class RunTelegramBot extends Command
 {
     protected $signature = 'telegram:run {--webhook : Установить webhook вместо long polling}';
+
     protected $description = 'Запустить Telegram бота (Long Polling или Webhook)';
 
     private ?string $token = null;
+
     private bool $running = true;
 
     public function handle(): int
@@ -23,16 +25,18 @@ class RunTelegramBot extends Command
         if (empty($this->token)) {
             $this->error('❌ Токен Telegram бота не настроен в БД');
             $this->info('💡 Добавьте токен в админке: /admin/settings');
+
             return Command::FAILURE;
         }
 
         // Валидация токена
         if (!$this->validateToken()) {
             $this->error('❌ Токен Telegram бота недействителен');
+
             return Command::FAILURE;
         }
 
-        $this->info('✅ Токен валиден. Бот: ' . $this->getBotInfo());
+        $this->info('✅ Токен валиден. Бот: '.$this->getBotInfo());
 
         if ($this->option('webhook')) {
             return $this->setupWebhook();
@@ -45,9 +49,11 @@ class RunTelegramBot extends Command
     {
         try {
             $response = Http::timeout(10)->get("https://api.telegram.org/bot{$this->token}/getMe");
+
             return $response->successful() && ($response->json('ok') ?? false);
         } catch (\Exception $e) {
             Log::error('Telegram token validation failed', ['error' => $e->getMessage()]);
+
             return false;
         }
     }
@@ -57,6 +63,7 @@ class RunTelegramBot extends Command
         try {
             $response = Http::get("https://api.telegram.org/bot{$this->token}/getMe");
             $bot = $response->json('result', []);
+
             return $bot['username'] ?? 'Unknown';
         } catch (\Exception $e) {
             return 'Unknown';
@@ -65,8 +72,8 @@ class RunTelegramBot extends Command
 
     private function setupWebhook(): int
     {
-        $webhookUrl = config('app.url') . '/api/webhooks/telegram';
-        
+        $webhookUrl = config('app.url').'/api/webhooks/telegram';
+
         $this->info("📡 Устанавливаю webhook: {$webhookUrl}");
 
         try {
@@ -77,18 +84,20 @@ class RunTelegramBot extends Command
 
             if ($response->successful() && ($response->json('ok') ?? false)) {
                 $this->info('✅ Webhook успешно установлен');
-                
+
                 // Сохраняем статус
                 Setting::set('telegram_webhook_active', 'true');
                 Setting::set('telegram_webhook_url', $webhookUrl);
-                
+
                 return Command::SUCCESS;
             }
 
-            $this->error('❌ Ошибка установки webhook: ' . ($response->json('description') ?? 'Unknown'));
+            $this->error('❌ Ошибка установки webhook: '.($response->json('description') ?? 'Unknown'));
+
             return Command::FAILURE;
         } catch (\Exception $e) {
-            $this->error('❌ Исключение: ' . $e->getMessage());
+            $this->error('❌ Исключение: '.$e->getMessage());
+
             return Command::FAILURE;
         }
     }
@@ -104,8 +113,8 @@ class RunTelegramBot extends Command
 
         // Обработка сигналов для graceful shutdown
         if (function_exists('pcntl_signal')) {
-            pcntl_signal(SIGTERM, fn() => $this->running = false);
-            pcntl_signal(SIGINT, fn() => $this->running = false);
+            pcntl_signal(SIGTERM, fn () => $this->running = false);
+            pcntl_signal(SIGINT, fn () => $this->running = false);
         }
 
         $offset = 0;
@@ -121,13 +130,13 @@ class RunTelegramBot extends Command
                 ]);
 
                 if (!$response->successful()) {
-                    throw new \Exception('HTTP Error: ' . $response->status());
+                    throw new \Exception('HTTP Error: '.$response->status());
                 }
 
                 $data = $response->json();
-                
+
                 if (!($data['ok'] ?? false)) {
-                    throw new \Exception('API Error: ' . ($data['description'] ?? 'Unknown'));
+                    throw new \Exception('API Error: '.($data['description'] ?? 'Unknown'));
                 }
 
                 $updates = $data['result'] ?? [];
@@ -154,6 +163,7 @@ class RunTelegramBot extends Command
 
                 if ($errors >= $maxErrors) {
                     $this->error("❌ Превышен лимит ошибок ({$maxErrors}). Остановка.");
+
                     return Command::FAILURE;
                 }
 
@@ -165,6 +175,7 @@ class RunTelegramBot extends Command
         }
 
         $this->info('👋 Бот остановлен');
+
         return Command::SUCCESS;
     }
 
@@ -172,7 +183,7 @@ class RunTelegramBot extends Command
     {
         try {
             $updateId = $update['update_id'] ?? 'unknown';
-            
+
             if (isset($update['message'])) {
                 $this->processMessage($update['message']);
             } elseif (isset($update['callback_query'])) {
@@ -194,7 +205,9 @@ class RunTelegramBot extends Command
         $chatId = $message['chat']['id'] ?? null;
         $text = $message['text'] ?? '';
 
-        if (!$chatId) return;
+        if (!$chatId) {
+            return;
+        }
 
         // Передаем обработку в TelegramService
         $service = app(TelegramService::class);
@@ -202,10 +215,10 @@ class RunTelegramBot extends Command
         if (str_starts_with($text, '/')) {
             $command = explode(' ', $text)[0];
             $this->info("📩 Команда: {$command} от {$chatId}");
-            
+
             // Эмулируем webhook запрос
             $webhookData = ['message' => $message];
-            
+
             // Вызываем обработчик через HTTP (или напрямую через контроллер)
             app(\App\Http\Controllers\TelegramController::class)->handle(
                 new \Illuminate\Http\Request($webhookData)
@@ -222,7 +235,7 @@ class RunTelegramBot extends Command
 
         // Передаем в контроллер
         $webhookData = ['callback_query' => $callbackQuery];
-        
+
         app(\App\Http\Controllers\TelegramController::class)->handle(
             new \Illuminate\Http\Request($webhookData)
         );

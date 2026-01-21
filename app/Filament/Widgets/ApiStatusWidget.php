@@ -10,9 +10,11 @@ use Illuminate\Support\Facades\Http;
 class ApiStatusWidget extends Widget
 {
     protected static string $view = 'filament.widgets.api-status-widget';
+
     protected static ?int $sort = -100;
-    protected int | string | array $columnSpan = 'full';
-    
+
+    protected int|string|array $columnSpan = 'full';
+
     // Обновление каждые 60 секунд
     protected static ?string $pollingInterval = '60s';
 
@@ -28,7 +30,7 @@ class ApiStatusWidget extends Widget
     private function getMetaStatus(): array
     {
         $token = Setting::get('meta_access_token');
-        
+
         if (empty($token)) {
             return [
                 'status' => 'unconfigured',
@@ -44,7 +46,7 @@ class ApiStatusWidget extends Widget
                 $response = Http::timeout(5)->get('https://graph.facebook.com/me', [
                     'access_token' => $token,
                 ]);
-                
+
                 return $response->successful();
             } catch (\Exception $e) {
                 return false;
@@ -62,7 +64,7 @@ class ApiStatusWidget extends Widget
     private function getTelegramStatus(): array
     {
         $token = Setting::get('telegram_bot_token');
-        
+
         if (empty($token)) {
             return [
                 'status' => 'unconfigured',
@@ -75,6 +77,7 @@ class ApiStatusWidget extends Widget
         $status = Cache::remember('api_status_telegram', 300, function () use ($token) {
             try {
                 $response = Http::timeout(5)->get("https://api.telegram.org/bot{$token}/getMe");
+
                 return $response->successful() && ($response->json('ok') ?? false);
             } catch (\Exception $e) {
                 return false;
@@ -86,8 +89,8 @@ class ApiStatusWidget extends Widget
         return [
             'status' => $status ? 'online' : 'error',
             'label' => 'Telegram',
-            'message' => $status 
-                ? ($webhookActive ? 'Webhook активен' : 'Long Polling') 
+            'message' => $status
+                ? ($webhookActive ? 'Webhook активен' : 'Long Polling')
                 : 'Ошибка подключения',
             'icon' => '📱',
         ];
@@ -98,7 +101,7 @@ class ApiStatusWidget extends Widget
         $key = Setting::get('gemini_api_key');
         $enabled = Setting::get('ai_enabled');
         $enabled = $enabled === true || $enabled === 'true' || $enabled === '1';
-        
+
         if (empty($key)) {
             return [
                 'status' => 'unconfigured',
@@ -130,7 +133,7 @@ class ApiStatusWidget extends Widget
     {
         Cache::forget('api_status_meta');
         Cache::forget('api_status_telegram');
-        
+
         $this->dispatch('$refresh');
     }
 }

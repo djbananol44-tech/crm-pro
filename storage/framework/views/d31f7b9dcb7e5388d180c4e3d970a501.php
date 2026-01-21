@@ -103,7 +103,7 @@
         
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             
-            <div class="rounded-2xl bg-white/5 border border-white/10 p-5">
+            <div class="rounded-2xl bg-[rgb(var(--surface))] border border-white/10 p-5">
                 <h3 class="text-sm font-semibold text-white mb-4 flex items-center gap-2">
                     <?php if (isset($component)) { $__componentOriginal643fe1b47aec0b76658e1a0200b34b2c = $component; } ?>
 <?php if (isset($attributes)) { $__attributesOriginal643fe1b47aec0b76658e1a0200b34b2c = $attributes; } ?>
@@ -151,7 +151,7 @@
             </div>
 
             
-            <div class="rounded-2xl bg-white/5 border border-white/10 p-5">
+            <div class="rounded-2xl bg-[rgb(var(--surface))] border border-white/10 p-5">
                 <h3 class="text-sm font-semibold text-white mb-4 flex items-center gap-2">
                     <?php if (isset($component)) { $__componentOriginal643fe1b47aec0b76658e1a0200b34b2c = $component; } ?>
 <?php if (isset($attributes)) { $__attributesOriginal643fe1b47aec0b76658e1a0200b34b2c = $attributes; } ?>
@@ -287,8 +287,8 @@
 
         
         <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if(count($this->recentLogs) > 0): ?>
-        <div class="rounded-2xl bg-white/5 border border-white/10 overflow-hidden">
-            <div class="px-5 py-4 border-b border-white/5">
+        <div class="rounded-2xl bg-[rgb(var(--surface))] border border-white/10 overflow-hidden">
+            <div class="px-5 py-4 border-b border-white/10">
                 <h3 class="text-sm font-semibold text-white flex items-center gap-2">
                     <?php if (isset($component)) { $__componentOriginal643fe1b47aec0b76658e1a0200b34b2c = $component; } ?>
 <?php if (isset($attributes)) { $__attributesOriginal643fe1b47aec0b76658e1a0200b34b2c = $attributes; } ?>
@@ -315,7 +315,7 @@
             </div>
             <div class="divide-y divide-white/5 max-h-64 overflow-y-auto">
                 <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php $__currentLoopData = $this->recentLogs; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $log): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                    <div class="px-5 py-3 flex items-center gap-3 hover:bg-white/5 transition-colors">
+                    <div class="px-5 py-3 flex items-center gap-3 hover:bg-white/10 transition-colors">
                         <span class="text-lg flex-shrink-0"><?php echo e($log['icon']); ?></span>
                         <div class="flex-1 min-w-0">
                             <p class="text-sm text-zinc-300 truncate"><?php echo e($log['message']); ?></p>

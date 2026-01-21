@@ -2,12 +2,12 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Filament\Models\Contracts\FilamentUser;
-use Filament\Panel;
-use Carbon\Carbon;
 
 class User extends Authenticatable implements FilamentUser
 {
@@ -76,7 +76,7 @@ class User extends Authenticatable implements FilamentUser
             return 'В сети';
         }
 
-        return 'Был ' . $this->last_activity_at->diffForHumans();
+        return 'Был '.$this->last_activity_at->diffForHumans();
     }
 
     /**

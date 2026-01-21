@@ -31,15 +31,25 @@ class ActivityLog extends Model
 
     // === Константы действий ===
     const ACTION_CREATED = 'created';
+
     const ACTION_STATUS_CHANGED = 'status_changed';
+
     const ACTION_MANAGER_ASSIGNED = 'manager_assigned';
+
     const ACTION_VIEWED = 'viewed';
+
     const ACTION_COMMENT_ADDED = 'comment_added';
+
     const ACTION_REMINDER_SET = 'reminder_set';
+
     const ACTION_AI_ANALYZED = 'ai_analyzed';
+
     const ACTION_PRIORITY_SET = 'priority_set';
+
     const ACTION_RATED = 'rated';
+
     const ACTION_LOGIN = 'login';
+
     const ACTION_LOGOUT = 'logout';
 
     // === Отношения ===
@@ -114,11 +124,12 @@ class ActivityLog extends Model
     public static function logManagerAssigned(Deal $deal, ?User $oldManager, User $newManager, ?User $actor = null): self
     {
         $oldName = $oldManager?->name ?? 'Не назначен';
+
         return self::createWithRequest([
             'deal_id' => $deal->id,
             'user_id' => $actor?->id,
             'action' => self::ACTION_MANAGER_ASSIGNED,
-            'description' => "Назначен: {$newManager->name}" . ($oldManager ? " (был: {$oldName})" : ''),
+            'description' => "Назначен: {$newManager->name}".($oldManager ? " (был: {$oldName})" : ''),
             'metadata' => [
                 'old_manager_id' => $oldManager?->id,
                 'new_manager_id' => $newManager->id,
@@ -140,7 +151,7 @@ class ActivityLog extends Model
     {
         $desc = 'Комментарий добавлен';
         if ($preview) {
-            $desc .= ': "' . mb_substr($preview, 0, 50) . '..."';
+            $desc .= ': "'.mb_substr($preview, 0, 50).'..."';
         }
 
         return self::createWithRequest([
@@ -170,13 +181,21 @@ class ActivityLog extends Model
             $desc .= " (Score: {$score})";
         }
 
-        return self::create([
+        return self::createWithRequest([
             'deal_id' => $deal->id,
             'user_id' => null,
-            'action' => self::ACTION_AI_ANALYZED,
+            'action' => self::ACTION_AI_ANALYSIS,
             'description' => $desc,
-            'metadata' => ['score' => $score],
+            'icon' => '🤖',
         ]);
+    }
+
+    /**
+     * Алиас для совместимости.
+     */
+    public static function logAiAnalysis(Deal $deal, ?int $score = null): self
+    {
+        return self::logAiAnalyzed($deal, $score);
     }
 
     public static function logPrioritySet(Deal $deal, bool $isPriority, ?string $reason = null): self

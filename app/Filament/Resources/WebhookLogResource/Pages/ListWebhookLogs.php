@@ -22,7 +22,7 @@ class ListWebhookLogs extends ListRecords
                 ->modalDescription('Будут удалены все логи старше 7 дней')
                 ->action(function () {
                     $deleted = \App\Models\WebhookLog::where('created_at', '<', now()->subDays(7))->delete();
-                    
+
                     \Filament\Notifications\Notification::make()
                         ->title("Удалено {$deleted} записей")
                         ->success()

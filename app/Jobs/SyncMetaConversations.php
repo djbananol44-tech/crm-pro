@@ -7,15 +7,15 @@ use App\Models\Conversation;
 use App\Models\Deal;
 use App\Models\User;
 use App\Services\MetaApiService;
+use Carbon\Carbon;
+use Exception;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
-use Exception;
-use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 
 class SyncMetaConversations implements ShouldQueue
 {
@@ -87,6 +87,7 @@ class SyncMetaConversations implements ShouldQueue
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
+
             throw $e;
         }
 
@@ -122,6 +123,7 @@ class SyncMetaConversations implements ShouldQueue
                     'conversation_id' => $conversationId,
                 ]);
                 DB::rollBack();
+
                 return;
             }
 
@@ -133,15 +135,22 @@ class SyncMetaConversations implements ShouldQueue
                     'psid' => $psid,
                 ]);
                 DB::rollBack();
+
                 return;
             }
+
+            // Извлекаем labels из Meta API
+            $labels = $metaApi->extractLabels($conversationData);
+            $pageId = $metaApi->getPageId();
 
             // Создаём или обновляем беседу
             $conversation = $this->syncConversation(
                 $conversationId,
                 $updatedTime,
                 $platform,
-                $metaApi->buildConversationLink($conversationId)
+                $metaApi->buildConversationLink($conversationId, $platform, $pageId),
+                $pageId,
+                $labels
             );
 
             $isNewConversation = $conversation->wasRecentlyCreated;
@@ -163,6 +172,7 @@ class SyncMetaConversations implements ShouldQueue
 
         } catch (Exception $e) {
             DB::rollBack();
+
             throw $e;
         }
     }
@@ -231,7 +241,9 @@ class SyncMetaConversations implements ShouldQueue
         string $conversationId,
         Carbon $updatedTime,
         string $platform,
-        string $link
+        string $link,
+        ?string $pageId = null,
+        ?array $labels = null
     ): Conversation {
         $conversation = Conversation::updateOrCreate(
             ['conversation_id' => $conversationId],
@@ -239,6 +251,8 @@ class SyncMetaConversations implements ShouldQueue
                 'updated_time' => $updatedTime,
                 'platform' => $platform,
                 'link' => $link,
+                'page_id' => $pageId,
+                'labels' => $labels,
             ]
         );
 
@@ -247,12 +261,15 @@ class SyncMetaConversations implements ShouldQueue
                 'id' => $conversation->id,
                 'conversation_id' => $conversationId,
                 'platform' => $platform,
+                'page_id' => $pageId,
+                'labels' => $labels,
             ]);
         } else {
             Log::info('SyncMetaConversations: Беседа обновлена', [
                 'id' => $conversation->id,
                 'conversation_id' => $conversationId,
                 'updated_time' => $updatedTime->toDateTimeString(),
+                'labels' => $labels,
             ]);
         }
 
@@ -275,6 +292,7 @@ class SyncMetaConversations implements ShouldQueue
                 'contact_id' => $contact->id,
                 'conversation_id' => $conversation->id,
             ]);
+
             return $existingDeal;
         }
 
@@ -314,6 +332,7 @@ class SyncMetaConversations implements ShouldQueue
 
         if ($managers->isEmpty()) {
             Log::warning('SyncMetaConversations: Нет доступных менеджеров для назначения');
+
             return null;
         }
 

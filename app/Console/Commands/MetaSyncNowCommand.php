@@ -41,34 +41,37 @@ class MetaSyncNowCommand extends Command
         // Валидация платформы
         if ($platform && !in_array($platform, ['messenger', 'instagram'])) {
             $this->error('❌ Ошибка: неверная платформа. Используйте: messenger или instagram');
+
             return self::FAILURE;
         }
 
         // Проверка конфигурации
         $this->info('🔧 Проверка конфигурации...');
-        
+
         $pageId = config('services.meta.page_id');
         $accessToken = config('services.meta.access_token');
 
         if (empty($pageId)) {
             $this->error('❌ Ошибка: META_PAGE_ID не настроен в .env');
+
             return self::FAILURE;
         }
 
         if (empty($accessToken)) {
             $this->error('❌ Ошибка: META_ACCESS_TOKEN не настроен в .env');
+
             return self::FAILURE;
         }
 
         $this->info("   ✓ PAGE_ID: {$pageId}");
-        $this->info("   ✓ ACCESS_TOKEN: " . substr($accessToken, 0, 20) . '...');
+        $this->info('   ✓ ACCESS_TOKEN: '.substr($accessToken, 0, 20).'...');
         $this->newLine();
 
         // Информация о запуске
         $this->info('📋 Параметры запуска:');
-        $this->info('   • Платформа: ' . ($platform ?: 'все'));
-        $this->info('   • Режим: ' . ($dryRun ? 'тестовый (dry-run)' : 'боевой'));
-        $this->info('   • Время: ' . now()->format('d.m.Y H:i:s'));
+        $this->info('   • Платформа: '.($platform ?: 'все'));
+        $this->info('   • Режим: '.($dryRun ? 'тестовый (dry-run)' : 'боевой'));
+        $this->info('   • Время: '.now()->format('d.m.Y H:i:s'));
         $this->newLine();
 
         if ($dryRun) {
@@ -79,6 +82,7 @@ class MetaSyncNowCommand extends Command
         // Запрос подтверждения
         if (!$this->confirm('Начать синхронизацию?', true)) {
             $this->info('Отменено пользователем.');
+
             return self::SUCCESS;
         }
 
@@ -147,28 +151,28 @@ class MetaSyncNowCommand extends Command
 
         // Тест получения бесед
         $this->info('   → Запрос списка бесед...');
-        
+
         try {
             $conversations = $metaApi->getConversations($platform);
             $count = count($conversations);
-            
+
             $this->info("   ✓ Получено бесед: {$count}");
 
             if ($count > 0) {
                 $this->newLine();
                 $this->info('   📝 Примеры бесед:');
-                
+
                 foreach (array_slice($conversations, 0, 3) as $conv) {
                     $id = $conv['id'] ?? 'N/A';
                     $updated = $conv['updated_time'] ?? 'N/A';
                     $this->info("      • ID: {$id}");
                     $this->info("        Обновлено: {$updated}");
-                    
+
                     // Попробуем получить PSID участника
                     $psid = $metaApi->extractParticipantPsid($conv);
                     if ($psid) {
                         $this->info("        PSID участника: {$psid}");
-                        
+
                         // Тест получения профиля
                         try {
                             $profile = $metaApi->getUserProfile($psid);
@@ -184,6 +188,7 @@ class MetaSyncNowCommand extends Command
 
         } catch (\Exception $e) {
             $this->error("   ✗ Ошибка: {$e->getMessage()}");
+
             throw $e;
         }
     }

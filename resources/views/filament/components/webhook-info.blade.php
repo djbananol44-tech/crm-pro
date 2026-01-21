@@ -6,7 +6,7 @@
             </div>
             <span class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Webhook URL</span>
         </div>
-        <code class="block w-full px-3 py-2.5 bg-white dark:bg-slate-900 rounded-lg text-sm font-mono text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 select-all">
+        <code class="block w-full px-3 py-2.5 bg-[rgb(11,15,20)] rounded-lg text-sm font-mono text-gray-300 border border-white/10 select-all">
             {{ url('/api/webhooks/meta') }}
         </code>
     </div>

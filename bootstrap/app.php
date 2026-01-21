@@ -16,10 +16,16 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\HandleInertiaRequests::class,
             \App\Http\Middleware\LogManagerActivity::class,
         ]);
-        
-        // Исключаем webhook из CSRF-проверки
+
+        // Регистрируем алиас для Meta webhook signature verification
+        $middleware->alias([
+            'meta.signature' => \App\Http\Middleware\VerifyMetaWebhookSignature::class,
+        ]);
+
+        // Исключаем webhook и export из CSRF-проверки
         $middleware->validateCsrfTokens(except: [
             'api/webhooks/*',
+            'export/*',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

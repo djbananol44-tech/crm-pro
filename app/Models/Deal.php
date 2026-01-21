@@ -4,7 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Carbon\Carbon;
 
 class Deal extends Model
 {
@@ -20,10 +19,15 @@ class Deal extends Model
         'ai_summary',
         'ai_summary_at',
         'ai_score',
+        'ai_intent',
+        'ai_objections',
+        'ai_next_action',
+        'analysis_failed_at',
         'is_viewed',
         'is_priority',
         'last_client_message_at',
         'last_manager_response_at',
+        'last_message_text',
         'manager_rating',
         'manager_review',
         'rated_at',
@@ -34,19 +38,21 @@ class Deal extends Model
         return [
             'reminder_at' => 'datetime',
             'ai_summary_at' => 'datetime',
+            'analysis_failed_at' => 'datetime',
             'last_client_message_at' => 'datetime',
             'last_manager_response_at' => 'datetime',
             'rated_at' => 'datetime',
             'is_viewed' => 'boolean',
             'is_priority' => 'boolean',
             'ai_score' => 'integer',
+            'ai_objections' => 'array',
             'manager_rating' => 'integer',
         ];
     }
 
     // === Ключевые слова для приоритизации ===
     const PRIORITY_KEYWORDS = [
-        'цена', 'сколько', 'стоит', 'стоимость', 'купить', 'куплю', 
+        'цена', 'сколько', 'стоит', 'стоимость', 'купить', 'куплю',
         'прайс', 'доставка', 'оплата', 'заказать', 'заказ', 'оформить',
         'скидка', 'акция', 'срочно', 'быстро', 'сегодня',
         'price', 'buy', 'order', 'delivery', 'cost',
@@ -63,6 +69,7 @@ class Deal extends Model
                 return true;
             }
         }
+
         return false;
     }
 
@@ -78,6 +85,7 @@ class Deal extends Model
                 $found[] = $keyword;
             }
         }
+
         return $found;
     }
 
@@ -109,7 +117,7 @@ class Deal extends Model
             return false;
         }
 
-        if ($this->last_manager_response_at && 
+        if ($this->last_manager_response_at &&
             $this->last_manager_response_at->gte($this->last_client_message_at)) {
             return false;
         }
@@ -119,9 +127,11 @@ class Deal extends Model
 
     public function getSlaOverdueMinutes(): int
     {
-        if (!$this->isSlaOverdue()) return 0;
+        if (!$this->isSlaOverdue()) {
+            return 0;
+        }
 
-        if ($this->last_manager_response_at && 
+        if ($this->last_manager_response_at &&
             $this->last_manager_response_at->gte($this->last_client_message_at)) {
             return 0;
         }
@@ -171,9 +181,16 @@ class Deal extends Model
 
     public function canChangeManager(?User $user = null): bool
     {
-        if ($this->manager_id === null) return true;
-        if ($user && $user->isAdmin()) return true;
-        if ($user && $user->isManager() && $this->manager_id !== null) return false;
+        if ($this->manager_id === null) {
+            return true;
+        }
+        if ($user && $user->isAdmin()) {
+            return true;
+        }
+        if ($user && $user->isManager() && $this->manager_id !== null) {
+            return false;
+        }
+
         return false;
     }
 
@@ -184,7 +201,7 @@ class Deal extends Model
         static::updating(function ($deal) {
             if ($deal->isDirty('manager_id') && $deal->getOriginal('manager_id') !== null) {
                 $user = auth()->user();
-                
+
                 if ($user && $user->isAdmin()) {
                     return true;
                 }

@@ -1,13 +1,28 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { formatDistanceToNow, isToday, parseISO, differenceInMinutes } from 'date-fns';
 import { ru } from 'date-fns/locale';
-import { 
+import {
     Search, Filter, Bell, BellOff, Clock, User, Flame, Zap,
-    MessageSquare, ChevronRight, RefreshCw, 
-    FileText, Briefcase, CheckCircle, Hourglass, Timer, Star, AlertCircle, TrendingUp, X
+    MessageSquare, ChevronRight, RefreshCw, Download,
+    FileText, Briefcase, CheckCircle, Hourglass, Timer, Star, AlertCircle, TrendingUp, X, Loader2
 } from 'lucide-react';
 import MainLayout from '../Layouts/MainLayout';
+
+// === Debounce Hook ===
+function useDebounce(value, delay) {
+    const [debouncedValue, setDebouncedValue] = useState(value);
+
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setDebouncedValue(value);
+        }, delay);
+
+        return () => clearTimeout(handler);
+    }, [value, delay]);
+
+    return debouncedValue;
+}
 
 // === Utilities ===
 function playNotificationSound() {
@@ -61,12 +76,12 @@ function isSlaOverdue(deal) {
 // === Bento Stats Card ===
 function BentoStat({ icon: Icon, label, value, trend, color, size = 'normal' }) {
     const colors = {
-        indigo: { bg: 'from-indigo-500/20 to-violet-500/10', icon: 'from-indigo-500 to-violet-600', text: 'text-indigo-400' },
+        orange: { bg: 'from-primary-500/20 to-amber-500/10', icon: 'from-primary-500 to-amber-600', text: 'text-primary-400' },
         emerald: { bg: 'from-emerald-500/20 to-teal-500/10', icon: 'from-emerald-500 to-teal-600', text: 'text-emerald-400' },
         amber: { bg: 'from-amber-500/20 to-orange-500/10', icon: 'from-amber-500 to-orange-600', text: 'text-amber-400' },
         rose: { bg: 'from-rose-500/20 to-pink-500/10', icon: 'from-rose-500 to-pink-600', text: 'text-rose-400' },
     };
-    const c = colors[color] || colors.indigo;
+    const c = colors[color] || colors.orange;
 
     return (
         <div className={`glass-card p-4 md:p-6 ${size === 'large' ? 'bento-item-large' : ''}`}>
@@ -91,7 +106,7 @@ function BentoStat({ icon: Icon, label, value, trend, color, size = 'normal' }) 
 function LeadScore({ score }) {
     if (!score) return null;
     const isHot = score > 80;
-    
+
     return (
         <div className={`ai-score ${isHot ? 'ai-score-hot' : ''}`}>
             {isHot && <Zap className="w-4 h-4 text-amber-400 absolute -top-1 -right-1" strokeWidth={2} />}
@@ -151,10 +166,10 @@ function StatusPill({ status, dealId }) {
                 <span className="sm:hidden">{current.label.slice(0, 3)}</span>
             </button>
             {isOpen && (
-                <div className="absolute z-50 mt-2 w-36 bg-zinc-900/95 backdrop-blur-xl rounded-xl border border-white/10 py-1 right-0 shadow-2xl animate-in">
+                <div className="absolute z-50 mt-2 w-36 bg-zinc-900/95 backdrop-blur-xl rounded-xl border border-line/10 py-1 right-0 shadow-2xl animate-in">
                     {Object.entries(config).map(([key, cfg]) => (
                         <button key={key} onClick={() => handleChange(key)}
-                            className={`w-full px-3 py-2.5 text-xs text-left transition-all min-h-[2.75rem] ${key === status ? 'text-white bg-white/5' : 'text-zinc-400 hover:text-white hover:bg-white/5'}`}>
+                            className={`w-full px-3 py-2.5 text-xs text-left transition-all min-h-[2.75rem] ${key === status ? 'text-white bg-surface' : 'text-zinc-400 hover:text-white hover:bg-surface'}`}>
                             {cfg.label}
                         </button>
                     ))}
@@ -184,7 +199,7 @@ function MobileFilters({ isOpen, onClose, filters, statuses, managers, isAdmin, 
     return (
         <>
             <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50" onClick={onClose} />
-            <div className="fixed bottom-0 left-0 right-0 z-50 bg-zinc-900/95 backdrop-blur-xl rounded-t-3xl border-t border-white/10 p-4 pb-8 animate-in safe-bottom">
+            <div className="fixed bottom-0 left-0 right-0 z-50 bg-zinc-900/95 backdrop-blur-xl rounded-t-3xl border-t border-line/10 p-4 pb-8 animate-in safe-bottom">
                 <div className="w-10 h-1 bg-zinc-700 rounded-full mx-auto mb-4" />
                 <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-semibold text-white">Фильтры</h3>
@@ -192,7 +207,7 @@ function MobileFilters({ isOpen, onClose, filters, statuses, managers, isAdmin, 
                         <X className="w-5 h-5" strokeWidth={1.5} />
                     </button>
                 </div>
-                
+
                 <div className="space-y-4">
                     <div>
                         <label className="block text-xs text-zinc-500 uppercase tracking-wider mb-2">Поиск</label>
@@ -226,42 +241,312 @@ function MobileFilters({ isOpen, onClose, filters, statuses, managers, isAdmin, 
     );
 }
 
-// === Desktop Filters ===
-function DesktopFilters({ filters, statuses, managers, isAdmin, onFilter }) {
-    const [local, setLocal] = useState(filters);
+// === Export Button ===
+function ExportButton({ filters }) {
+    const [isOpen, setIsOpen] = useState(false);
+    const [exporting, setExporting] = useState(false);
+    const [exportStatus, setExportStatus] = useState(null);
+    const ref = useRef(null);
+
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (ref.current && !ref.current.contains(e.target)) setIsOpen(false);
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const handleExport = async (format) => {
+        setExporting(true);
+        setExportStatus('Запуск экспорта...');
+
+        try {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+
+            const response = await fetch('/export/start', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                },
+                body: JSON.stringify({ ...filters, format }),
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                setExportStatus('Подготовка файла...');
+
+                // Polling for status
+                const checkStatus = async () => {
+                    const statusRes = await fetch(`/export/status/${data.export_id}`);
+                    const statusData = await statusRes.json();
+
+                    if (statusData.status === 'completed') {
+                        setExportStatus('Готово! Скачивание...');
+                        window.location.href = statusData.download_url;
+                        setTimeout(() => {
+                            setExporting(false);
+                            setExportStatus(null);
+                            setIsOpen(false);
+                        }, 1500);
+                    } else if (statusData.status === 'failed') {
+                        setExportStatus('Ошибка: ' + statusData.error);
+                        setTimeout(() => {
+                            setExporting(false);
+                            setExportStatus(null);
+                        }, 3000);
+                    } else {
+                        setTimeout(checkStatus, 1000);
+                    }
+                };
+
+                setTimeout(checkStatus, 1000);
+            } else {
+                setExportStatus('Ошибка: ' + (data.error || 'Неизвестная ошибка'));
+                setTimeout(() => {
+                    setExporting(false);
+                    setExportStatus(null);
+                }, 3000);
+            }
+        } catch (e) {
+            setExportStatus('Ошибка сети');
+            setTimeout(() => {
+                setExporting(false);
+                setExportStatus(null);
+            }, 3000);
+        }
+    };
 
     return (
-        <div className="hidden md:block glass-card-static p-4 md:p-5 mb-4 md:mb-6">
-            <div className="flex flex-wrap items-center gap-3">
-                <div className="flex-1 min-w-[200px]">
-                    <div className="relative">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" strokeWidth={1.5} />
-                        <input type="text" className="input-premium pl-11" placeholder="Поиск по имени, PSID..."
-                            value={local.search || ''} onChange={(e) => setLocal({ ...local, search: e.target.value })}
-                            onKeyDown={(e) => e.key === 'Enter' && onFilter(local)} />
-                    </div>
-                </div>
-                <select className="input-premium w-auto" value={local.status || ''} onChange={(e) => setLocal({ ...local, status: e.target.value })}>
-                    <option value="">Все статусы</option>
-                    {statuses.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
-                </select>
-                {isAdmin && (
-                    <select className="input-premium w-auto" value={local.manager_id || ''} onChange={(e) => setLocal({ ...local, manager_id: e.target.value })}>
-                        <option value="">Все менеджеры</option>
-                        {managers.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
-                    </select>
+        <div className="relative" ref={ref}>
+            <button
+                onClick={() => setIsOpen(!isOpen)}
+                disabled={exporting}
+                className="btn-ghost text-xs"
+            >
+                {exporting ? (
+                    <Loader2 className="w-4 h-4 animate-spin" strokeWidth={1.5} />
+                ) : (
+                    <Download className="w-4 h-4" strokeWidth={1.5} />
                 )}
-                <button onClick={() => onFilter(local)} className="btn-premium">
-                    <Filter className="w-4 h-4" strokeWidth={1.5} /> Найти
-                </button>
-                <button onClick={() => { setLocal({}); onFilter({}); }} className="btn-ghost">Сбросить</button>
+                <span className="hidden sm:inline">{exporting ? exportStatus : 'Экспорт'}</span>
+            </button>
+
+            {isOpen && !exporting && (
+                <div className="absolute z-50 mt-2 right-0 w-48 bg-zinc-900/95 backdrop-blur-xl rounded-xl border border-line/10 py-1 shadow-2xl animate-in">
+                    <button
+                        onClick={() => handleExport('xlsx')}
+                        className="w-full px-4 py-2.5 text-xs text-left text-zinc-300 hover:text-white hover:bg-surface transition-all"
+                    >
+                        📊 Экспорт в Excel (.xlsx)
+                    </button>
+                    <button
+                        onClick={() => handleExport('csv')}
+                        className="w-full px-4 py-2.5 text-xs text-left text-zinc-300 hover:text-white hover:bg-surface transition-all"
+                    >
+                        📄 Экспорт в CSV
+                    </button>
+                    <div className="my-1 border-t border-line/10" />
+                    <p className="px-4 py-2 text-[10px] text-zinc-500">
+                        Экспортирует сделки с учётом текущих фильтров
+                    </p>
+                </div>
+            )}
+        </div>
+    );
+}
+
+// === Quick Filter Chip ===
+function QuickFilterChip({ label, count, active, onClick, color = 'zinc' }) {
+    const colors = {
+        zinc: 'bg-onyx-800 text-onyx-300 hover:bg-onyx-700',
+        rose: 'bg-rose-500/20 text-rose-300 hover:bg-rose-500/30',
+        amber: 'bg-amber-500/20 text-amber-300 hover:bg-amber-500/30',
+        orange: 'bg-primary-500/20 text-primary-300 hover:bg-primary-500/30',
+        emerald: 'bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30',
+        sky: 'bg-sky-500/20 text-sky-300 hover:bg-sky-500/30',
+    };
+
+    return (
+        <button
+            onClick={onClick}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                active ? 'ring-2 ring-orange/30 ' + colors[color] : colors[color]
+            }`}
+        >
+            {label} {count > 0 && <span className="ml-1 opacity-70">({count})</span>}
+        </button>
+    );
+}
+
+// === Desktop Filters with Debounced Search ===
+function DesktopFilters({ filters, statuses, managers, isAdmin, onFilter, quickStats }) {
+    const [local, setLocal] = useState(filters);
+    const [searchInput, setSearchInput] = useState(filters.search || '');
+    const [isSearching, setIsSearching] = useState(false);
+    const debouncedSearch = useDebounce(searchInput, 350);
+
+    // Sync local state with props
+    useEffect(() => {
+        setLocal(filters);
+        setSearchInput(filters.search || '');
+    }, [filters]);
+
+    // Debounced search effect
+    useEffect(() => {
+        if (debouncedSearch !== (filters.search || '')) {
+            setIsSearching(true);
+            onFilter({ ...local, search: debouncedSearch });
+            // Reset searching state after a short delay
+            const timeout = setTimeout(() => setIsSearching(false), 300);
+            return () => clearTimeout(timeout);
+        }
+    }, [debouncedSearch]);
+
+    const handleQuickFilter = (key) => {
+        const newFilters = { ...local };
+        // Сбрасываем все quick filters
+        ['sla_overdue', 'priority', 'unassigned', 'unviewed', 'hot_leads'].forEach(k => {
+            newFilters[k] = false;
+        });
+        // Активируем выбранный (toggle)
+        if (!filters[key]) {
+            newFilters[key] = true;
+        }
+        setLocal(newFilters);
+        onFilter(newFilters);
+    };
+
+    const handleSortChange = (sort) => {
+        const newFilters = { ...local, sort };
+        setLocal(newFilters);
+        onFilter(newFilters);
+    };
+
+    const handleSelectChange = (key, value) => {
+        const newFilters = { ...local, [key]: value };
+        setLocal(newFilters);
+        onFilter(newFilters);
+    };
+
+    const handleReset = () => {
+        setSearchInput('');
+        setLocal({});
+        onFilter({});
+    };
+
+    return (
+        <div className="hidden md:block space-y-3 mb-4 md:mb-6">
+            {/* Quick Filters */}
+            {quickStats && (
+                <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-xs text-zinc-500 font-medium uppercase tracking-wider mr-2">Быстро:</span>
+                    <QuickFilterChip
+                        label="🔥 SLA"
+                        count={quickStats.sla_overdue}
+                        active={filters.sla_overdue}
+                        onClick={() => handleQuickFilter('sla_overdue')}
+                        color="rose"
+                    />
+                    <QuickFilterChip
+                        label="⚡ Приоритет"
+                        count={quickStats.priority}
+                        active={filters.priority}
+                        onClick={() => handleQuickFilter('priority')}
+                        color="amber"
+                    />
+                    <QuickFilterChip
+                        label="🎯 Hot Leads"
+                        count={quickStats.hot_leads}
+                        active={filters.hot_leads}
+                        onClick={() => handleQuickFilter('hot_leads')}
+                        color="emerald"
+                    />
+                    <QuickFilterChip
+                        label="👤 Без менеджера"
+                        count={quickStats.unassigned}
+                        active={filters.unassigned}
+                        onClick={() => handleQuickFilter('unassigned')}
+                        color="orange"
+                    />
+                    <QuickFilterChip
+                        label="👁 Новые"
+                        count={quickStats.unviewed}
+                        active={filters.unviewed}
+                        onClick={() => handleQuickFilter('unviewed')}
+                        color="zinc"
+                    />
+                </div>
+            )}
+
+            {/* Main Filters */}
+            <div className="glass-card-static p-4 md:p-5">
+                <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex-1 min-w-[200px]">
+                        <div className="relative">
+                            {isSearching ? (
+                                <Loader2 className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-400 animate-spin" strokeWidth={2} />
+                            ) : (
+                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" strokeWidth={1.5} />
+                            )}
+                            <input
+                                type="text"
+                                className="input-premium pl-11"
+                                placeholder="Поиск по имени, AI анализу, комментарию..."
+                                value={searchInput}
+                                onChange={(e) => setSearchInput(e.target.value)}
+                            />
+                            {searchInput && (
+                                <button
+                                    onClick={() => { setSearchInput(''); onFilter({ ...local, search: '' }); }}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-zinc-500 hover:text-zinc-300 transition-colors"
+                                >
+                                    <X className="w-4 h-4" strokeWidth={1.5} />
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                    <select
+                        className="input-premium w-auto"
+                        value={local.status || ''}
+                        onChange={(e) => handleSelectChange('status', e.target.value)}
+                    >
+                        <option value="">Все статусы</option>
+                        {statuses.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+                    </select>
+                    {isAdmin && (
+                        <select
+                            className="input-premium w-auto"
+                            value={local.manager_id || ''}
+                            onChange={(e) => handleSelectChange('manager_id', e.target.value)}
+                        >
+                            <option value="">Все менеджеры</option>
+                            {managers.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+                        </select>
+                    )}
+                    <select
+                        className="input-premium w-auto"
+                        value={local.sort || 'smart'}
+                        onChange={(e) => handleSortChange(e.target.value)}
+                    >
+                        <option value="smart">🧠 Умная сортировка</option>
+                        <option value="sla">⏱️ По SLA</option>
+                        <option value="priority">⚡ По приоритету</option>
+                        <option value="score">📊 По AI Score</option>
+                        <option value="updated">🕐 По обновлению</option>
+                        <option value="created">📅 По созданию</option>
+                    </select>
+                    <button onClick={handleReset} className="btn-ghost">Сбросить</button>
+                </div>
             </div>
         </div>
     );
 }
 
 // === Deal Card ===
-function DealCard({ deal, index }) {
+function DealCard({ deal, index, isAdmin }) {
+    const [actionLoading, setActionLoading] = useState(null);
     const now = new Date();
     const isReminderDue = deal.reminder_at && new Date(deal.reminder_at) <= now;
     const isUnviewed = !deal.is_viewed;
@@ -270,12 +555,23 @@ function DealCard({ deal, index }) {
     const slaOverdue = isSlaOverdue(deal);
     const isHotLead = deal.ai_score && deal.ai_score > 80;
     const isPriority = deal.is_priority && deal.status !== 'Closed';
+    const canClaim = !deal.manager_id && deal.status !== 'Closed';
+
+    const handleQuickAction = (e, action, data) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setActionLoading(action);
+        router.patch(`/deals/${deal.id}`, data, {
+            preserveScroll: true,
+            onFinish: () => setActionLoading(null),
+        });
+    };
 
     return (
         <Link href={`/deals/${deal.id}`} className="block">
-            <div 
+            <div
                 className={`
-                    glass-card p-3 md:p-5 animate-in transition-all duration-300 cursor-pointer
+                    glass-card p-3 md:p-5 animate-in transition-all duration-300 cursor-pointer group
                     ${isPriority ? 'ring-1 ring-rose-500/50 badge-priority' : ''}
                     ${slaOverdue && !isPriority ? 'ring-1 ring-amber-500/50' : ''}
                 `}
@@ -295,7 +591,7 @@ function DealCard({ deal, index }) {
                             w-11 h-11 md:w-14 md:h-14 rounded-xl md:rounded-2xl flex items-center justify-center text-white font-semibold text-base md:text-lg
                             ${isPriority ? 'bg-gradient-to-br from-rose-500 to-pink-600' :
                               isHotLead ? 'bg-gradient-to-br from-amber-500 to-orange-600' :
-                              isUnviewed ? 'bg-gradient-to-br from-indigo-500 to-violet-600' : 
+                              isUnviewed ? 'bg-gradient-to-br from-indigo-500 to-violet-600' :
                               'bg-gradient-to-br from-zinc-600 to-zinc-700'}
                         `}>
                             {deal.contact?.name?.charAt(0)?.toUpperCase() || '?'}
@@ -372,6 +668,30 @@ function DealCard({ deal, index }) {
                         {formatRelativeTime(deal.updated_at)}
                     </div>
 
+                    {/* Quick Actions - Show on hover */}
+                    <div className="hidden lg:flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {canClaim && (
+                            <button
+                                onClick={(e) => handleQuickAction(e, 'claim', { manager_id: 'current' })}
+                                disabled={actionLoading === 'claim'}
+                                className="p-2 rounded-lg bg-indigo-500/20 text-indigo-400 hover:bg-indigo-500/30 transition-all text-xs font-medium"
+                                title="Взять в работу"
+                            >
+                                {actionLoading === 'claim' ? <RefreshCw className="w-4 h-4 animate-spin" /> : '🚀'}
+                            </button>
+                        )}
+                        {deal.status !== 'Closed' && (
+                            <button
+                                onClick={(e) => handleQuickAction(e, 'close', { status: 'Closed' })}
+                                disabled={actionLoading === 'close'}
+                                className="p-2 rounded-lg bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 transition-all text-xs font-medium"
+                                title="Завершить"
+                            >
+                                {actionLoading === 'close' ? <RefreshCw className="w-4 h-4 animate-spin" /> : '✓'}
+                            </button>
+                        )}
+                    </div>
+
                     {/* Arrow */}
                     <ChevronRight className="w-5 h-5 text-zinc-600 flex-shrink-0" strokeWidth={1.5} />
                 </div>
@@ -381,10 +701,13 @@ function DealCard({ deal, index }) {
 }
 
 // === Main Component ===
-export default function Dashboard({ deals, managers, filters, statuses, isAdmin }) {
+export default function Dashboard({ deals, managers, filters, statuses, isAdmin, quickStats }) {
     const prevCount = useRef(null);
     const [notifEnabled, setNotifEnabled] = useState(false);
     const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+    const [mobileSearchInput, setMobileSearchInput] = useState(filters.search || '');
+    const [isSearching, setIsSearching] = useState(false);
+    const debouncedMobileSearch = useDebounce(mobileSearchInput, 350);
 
     useEffect(() => {
         if ('Notification' in window && Notification.permission === 'granted') {
@@ -405,13 +728,38 @@ export default function Dashboard({ deals, managers, filters, statuses, isAdmin 
         return () => clearInterval(interval);
     }, []);
 
+    // Mobile search debounce
+    useEffect(() => {
+        if (debouncedMobileSearch !== (filters.search || '')) {
+            setIsSearching(true);
+            handleFilter({ ...filters, search: debouncedMobileSearch });
+            const timeout = setTimeout(() => setIsSearching(false), 300);
+            return () => clearTimeout(timeout);
+        }
+    }, [debouncedMobileSearch]);
+
+    // Sync mobile search with filters
+    useEffect(() => {
+        setMobileSearchInput(filters.search || '');
+    }, [filters.search]);
+
     const stats = useMemo(() => {
-        const all = deals.total || 0;
-        const inProgress = deals.data?.filter(d => d.status === 'In Progress').length || 0;
-        const priority = deals.data?.filter(d => d.is_priority && d.status !== 'Closed').length || 0;
-        const slaOverdue = deals.data?.filter(d => isSlaOverdue(d)).length || 0;
-        return { all, inProgress, priority, slaOverdue };
-    }, [deals]);
+        // Используем quickStats с сервера если есть, иначе считаем локально
+        if (quickStats) {
+            return {
+                all: quickStats.total,
+                inProgress: quickStats.in_progress,
+                priority: quickStats.priority,
+                slaOverdue: quickStats.sla_overdue,
+            };
+        }
+        return {
+            all: deals.total || 0,
+            inProgress: deals.data?.filter(d => d.status === 'In Progress').length || 0,
+            priority: deals.data?.filter(d => d.is_priority && d.status !== 'Closed').length || 0,
+            slaOverdue: deals.data?.filter(d => isSlaOverdue(d)).length || 0,
+        };
+    }, [deals, quickStats]);
 
     const requestNotificationPermission = () => {
         if ('Notification' in window) {
@@ -419,7 +767,9 @@ export default function Dashboard({ deals, managers, filters, statuses, isAdmin 
         }
     };
 
-    const handleFilter = (f) => router.get('/deals', f, { preserveState: true, preserveScroll: true });
+    const handleFilter = useCallback((f) => {
+        router.get('/deals', f, { preserveState: true, preserveScroll: true });
+    }, []);
 
     return (
         <MainLayout title="Сделки">
@@ -427,37 +777,60 @@ export default function Dashboard({ deals, managers, filters, statuses, isAdmin 
 
             {/* Bento Stats Grid */}
             <div className="bento-grid mb-4 md:mb-8">
-                <BentoStat icon={Briefcase} label="Всего сделок" value={stats.all} color="indigo" />
+                <BentoStat icon={Briefcase} label="Всего сделок" value={stats.all} color="orange" />
                 <BentoStat icon={Hourglass} label="В работе" value={stats.inProgress} color="amber" />
                 <BentoStat icon={AlertCircle} label="Приоритетных" value={stats.priority} color="rose" />
                 <BentoStat icon={Timer} label="Просрочено SLA" value={stats.slaOverdue} color="emerald" />
             </div>
 
-            {/* Mobile Filter Button */}
-            <div className="flex md:hidden items-center gap-3 mb-4">
+            {/* Mobile Search + Filter Button */}
+            <div className="flex md:hidden items-center gap-3 mb-4 sticky top-0 z-20 bg-zinc-950/95 backdrop-blur-sm py-2 -mx-4 px-4">
                 <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" strokeWidth={1.5} />
-                    <input type="text" className="input-premium pl-10 pr-4" placeholder="Поиск..."
-                        value={filters.search || ''} 
-                        onChange={(e) => handleFilter({ ...filters, search: e.target.value })} />
+                    {isSearching ? (
+                        <Loader2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-400 animate-spin" strokeWidth={2} />
+                    ) : (
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" strokeWidth={1.5} />
+                    )}
+                    <input
+                        type="text"
+                        className="input-premium pl-10 pr-10"
+                        placeholder="Поиск..."
+                        value={mobileSearchInput}
+                        onChange={(e) => setMobileSearchInput(e.target.value)}
+                    />
+                    {mobileSearchInput && (
+                        <button
+                            onClick={() => { setMobileSearchInput(''); handleFilter({ ...filters, search: '' }); }}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-zinc-500 hover:text-zinc-300 transition-colors min-w-[2.75rem] min-h-[2.75rem] flex items-center justify-center -mr-2"
+                        >
+                            <X className="w-4 h-4" strokeWidth={1.5} />
+                        </button>
+                    )}
                 </div>
-                <button onClick={() => setMobileFiltersOpen(true)} className="btn-ghost px-3">
+                <button
+                    onClick={() => setMobileFiltersOpen(true)}
+                    className="btn-ghost px-3 min-w-[2.75rem] min-h-[2.75rem] relative"
+                >
                     <Filter className="w-5 h-5" strokeWidth={1.5} />
+                    {/* Badge for active filters */}
+                    {(filters.status || filters.sla_overdue || filters.priority || filters.unassigned) && (
+                        <span className="absolute -top-1 -right-1 w-2 h-2 bg-indigo-500 rounded-full" />
+                    )}
                 </button>
             </div>
 
             {/* Desktop Filters */}
-            <DesktopFilters filters={filters} statuses={statuses} managers={managers} isAdmin={isAdmin} onFilter={handleFilter} />
+            <DesktopFilters filters={filters} statuses={statuses} managers={managers} isAdmin={isAdmin} onFilter={handleFilter} quickStats={quickStats} />
 
             {/* Mobile Filters Sheet */}
-            <MobileFilters 
-                isOpen={mobileFiltersOpen} 
+            <MobileFilters
+                isOpen={mobileFiltersOpen}
                 onClose={() => setMobileFiltersOpen(false)}
-                filters={filters} 
-                statuses={statuses} 
-                managers={managers} 
-                isAdmin={isAdmin} 
-                onFilter={handleFilter} 
+                filters={filters}
+                statuses={statuses}
+                managers={managers}
+                isAdmin={isAdmin}
+                onFilter={handleFilter}
             />
 
             {/* Header */}
@@ -466,11 +839,14 @@ export default function Dashboard({ deals, managers, filters, statuses, isAdmin 
                     Показано <span className="font-medium text-zinc-300">{deals.data?.length || 0}</span> из{' '}
                     <span className="font-medium text-zinc-300">{deals.total || 0}</span>
                 </p>
-                <button onClick={requestNotificationPermission}
-                    className={`btn-ghost text-xs ${notifEnabled ? 'text-emerald-400' : ''}`}>
-                    {notifEnabled ? <Bell className="w-4 h-4" strokeWidth={1.5} /> : <BellOff className="w-4 h-4" strokeWidth={1.5} />}
-                    <span className="hidden sm:inline">{notifEnabled ? 'Уведомления вкл.' : 'Включить'}</span>
-                </button>
+                <div className="flex items-center gap-2">
+                    <ExportButton filters={filters} />
+                    <button onClick={requestNotificationPermission}
+                        className={`btn-ghost text-xs ${notifEnabled ? 'text-emerald-400' : ''}`}>
+                        {notifEnabled ? <Bell className="w-4 h-4" strokeWidth={1.5} /> : <BellOff className="w-4 h-4" strokeWidth={1.5} />}
+                        <span className="hidden sm:inline">{notifEnabled ? 'Уведомления вкл.' : 'Включить'}</span>
+                    </button>
+                </div>
             </div>
 
             {/* Deals List */}
@@ -484,7 +860,7 @@ export default function Dashboard({ deals, managers, filters, statuses, isAdmin 
                         <p className="text-xs md:text-sm text-zinc-500">Попробуйте изменить параметры фильтрации</p>
                     </div>
                 ) : (
-                    deals.data?.map((deal, i) => <DealCard key={deal.id} deal={deal} index={i} />)
+                    deals.data?.map((deal, i) => <DealCard key={deal.id} deal={deal} index={i} isAdmin={isAdmin} />)
                 )}
             </div>
 
@@ -494,7 +870,7 @@ export default function Dashboard({ deals, managers, filters, statuses, isAdmin 
                     {deals.links.map((link, i) => (
                         <Link key={i} href={link.url || '#'} preserveScroll
                             className={`px-3 md:px-4 py-2 md:py-2.5 text-xs md:text-sm font-medium rounded-lg md:rounded-xl transition-all duration-300 min-w-[2.75rem] min-h-[2.75rem] flex items-center justify-center
-                                ${link.active ? 'bg-gradient-to-r from-indigo-500 to-violet-600 text-white shadow-lg' : 'text-zinc-400 hover:bg-white/5 hover:text-white'}
+                                ${link.active ? 'bg-gradient-to-r from-indigo-500 to-violet-600 text-white shadow-lg' : 'text-zinc-400 hover:bg-surface hover:text-white'}
                                 ${!link.url ? 'opacity-40 pointer-events-none' : ''}`}
                             dangerouslySetInnerHTML={{ __html: link.label }} />
                     ))}

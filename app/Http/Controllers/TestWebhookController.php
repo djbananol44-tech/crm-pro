@@ -16,14 +16,14 @@ use Illuminate\Support\Str;
 
 /**
  * Контроллер для тестирования вебхуков и интеграций.
- * 
+ *
  * ⚠️ Только для разработки и тестирования!
  */
 class TestWebhookController extends Controller
 {
     /**
      * Эмуляция входящего сообщения от Meta (Facebook/Instagram).
-     * 
+     *
      * Создает тестовую сделку и запускает всю цепочку:
      * Contact → Conversation → Deal → Telegram → AI
      */
@@ -43,12 +43,12 @@ class TestWebhookController extends Controller
 
         try {
             // 1. Создаем тестовый контакт
-            $psid = 'test_' . Str::random(10);
+            $psid = 'test_'.Str::random(10);
             $contact = Contact::create([
                 'psid' => $psid,
                 'first_name' => 'Тестовый',
-                'last_name' => 'Клиент ' . now()->format('H:i'),
-                'name' => 'Тестовый Клиент ' . now()->format('H:i'),
+                'last_name' => 'Клиент '.now()->format('H:i'),
+                'name' => 'Тестовый Клиент '.now()->format('H:i'),
             ]);
             $results['steps'][] = [
                 'step' => '1. Контакт',
@@ -58,7 +58,7 @@ class TestWebhookController extends Controller
 
             // 2. Создаем беседу
             $conversation = Conversation::create([
-                'conversation_id' => 't:' . Str::random(20),
+                'conversation_id' => 't:'.Str::random(20),
                 'contact_id' => $contact->id,
                 'platform' => 'messenger',
                 'updated_time' => now(),
@@ -122,7 +122,7 @@ class TestWebhookController extends Controller
     {
         try {
             $telegram = app(TelegramService::class);
-            
+
             if (!$telegram->isAvailable()) {
                 return [
                     'step' => '4. Telegram',
@@ -161,7 +161,7 @@ class TestWebhookController extends Controller
             return [
                 'step' => '4. Telegram',
                 'status' => '❌',
-                'message' => 'Ошибка: ' . $e->getMessage(),
+                'message' => 'Ошибка: '.$e->getMessage(),
             ];
         }
     }
@@ -173,7 +173,7 @@ class TestWebhookController extends Controller
     {
         try {
             $aiService = app(AiAnalysisService::class);
-            
+
             if (!$aiService->isAvailable()) {
                 return [
                     'step' => '5. Gemini AI',
@@ -184,19 +184,19 @@ class TestWebhookController extends Controller
 
             // Тестовые сообщения для анализа
             $testMessages = collect([
-                (object)[
+                (object) [
                     'message' => 'Здравствуйте! Хочу узнать цену на ваш товар.',
-                    'from' => (object)['id' => 'client'],
+                    'from' => (object) ['id' => 'client'],
                     'created_time' => now()->subMinutes(5)->toISOString(),
                 ],
-                (object)[
+                (object) [
                     'message' => 'Добрый день! Конечно, подскажите какой именно товар вас интересует?',
-                    'from' => (object)['id' => 'page'],
+                    'from' => (object) ['id' => 'page'],
                     'created_time' => now()->subMinutes(3)->toISOString(),
                 ],
-                (object)[
+                (object) [
                     'message' => 'Меня интересует доставка в Москву и возможность оплаты картой.',
-                    'from' => (object)['id' => 'client'],
+                    'from' => (object) ['id' => 'client'],
                     'created_time' => now()->toISOString(),
                 ],
             ]);
@@ -228,25 +228,74 @@ class TestWebhookController extends Controller
             return [
                 'step' => '5. Gemini AI',
                 'status' => '❌',
-                'message' => 'Ошибка: ' . $e->getMessage(),
+                'message' => 'Ошибка: '.$e->getMessage(),
             ];
         }
     }
 
     /**
-     * Проверка статуса всех интеграций.
+     * Расширенная проверка статуса всех интеграций и системы.
      */
     public function healthCheck(): JsonResponse
     {
         $checks = [];
+        $overallStatus = 'ok';
 
         // Database
         try {
             \DB::connection()->getPdo();
-            $checks['database'] = ['status' => 'ok', 'message' => 'Connected'];
+            $dbVersion = \DB::selectOne('SELECT version()')->version ?? 'Unknown';
+            $checks['database'] = [
+                'status' => 'ok',
+                'message' => 'Connected',
+                'details' => substr($dbVersion, 0, 30),
+            ];
         } catch (\Exception $e) {
             $checks['database'] = ['status' => 'error', 'message' => $e->getMessage()];
+            $overallStatus = 'error';
         }
+
+        // Redis
+        try {
+            \Illuminate\Support\Facades\Redis::ping();
+            $checks['redis'] = ['status' => 'ok', 'message' => 'Connected'];
+        } catch (\Exception $e) {
+            $checks['redis'] = [
+                'status' => config('queue.default') === 'redis' ? 'error' : 'warning',
+                'message' => $e->getMessage(),
+            ];
+            if (config('queue.default') === 'redis') {
+                $overallStatus = 'error';
+            }
+        }
+
+        // Queue
+        $queueMetrics = $this->getQueueMetrics();
+        $queueStatus = 'ok';
+        $queueMessage = 'Working';
+
+        if ($queueMetrics['failed'] > 0) {
+            $queueStatus = 'warning';
+            $queueMessage = "{$queueMetrics['failed']} failed jobs";
+            if ($overallStatus === 'ok') {
+                $overallStatus = 'warning';
+            }
+        }
+
+        $totalPending = array_sum($queueMetrics['queues']);
+        if ($totalPending > 100) {
+            $queueStatus = 'warning';
+            $queueMessage = "Queue backlog: {$totalPending}";
+            if ($overallStatus === 'ok') {
+                $overallStatus = 'warning';
+            }
+        }
+
+        $checks['queue'] = [
+            'status' => $queueStatus,
+            'message' => $queueMessage,
+            'metrics' => $queueMetrics,
+        ];
 
         // Meta API
         $metaToken = Setting::get('meta_access_token');
@@ -257,9 +306,11 @@ class TestWebhookController extends Controller
 
         // Telegram
         $tgToken = Setting::get('telegram_bot_token');
+        $tgMode = Setting::get('telegram_mode', 'polling');
         $checks['telegram'] = [
-            'status' => $tgToken ? 'configured' : 'not_configured', 
-            'message' => $tgToken ? 'Token set' : 'No token',
+            'status' => $tgToken ? 'configured' : 'not_configured',
+            'message' => $tgToken ? "Token set ({$tgMode})" : 'No token',
+            'mode' => $tgMode,
         ];
 
         // Gemini
@@ -270,10 +321,59 @@ class TestWebhookController extends Controller
             'message' => $geminiKey ? ($aiEnabled ? 'Enabled' : 'Disabled') : 'No key',
         ];
 
+        // Stats
+        $stats = [
+            'deals_total' => Deal::count(),
+            'deals_active' => Deal::whereIn('status', ['New', 'In Progress'])->count(),
+            'deals_today' => Deal::whereDate('created_at', today())->count(),
+            'contacts_total' => Contact::count(),
+        ];
+
         return response()->json([
-            'status' => 'ok',
+            'status' => $overallStatus,
             'timestamp' => now()->toISOString(),
             'checks' => $checks,
+            'stats' => $stats,
         ]);
+    }
+
+    /**
+     * Получить метрики очередей.
+     */
+    protected function getQueueMetrics(): array
+    {
+        $metrics = [
+            'driver' => config('queue.default'),
+            'queues' => [
+                'default' => 0,
+                'meta' => 0,
+                'ai' => 0,
+            ],
+            'failed' => 0,
+        ];
+
+        try {
+            // Для Redis
+            if (config('queue.default') === 'redis') {
+                $prefix = config('database.redis.options.prefix', '');
+
+                foreach (array_keys($metrics['queues']) as $queue) {
+                    try {
+                        $key = $prefix."queues:{$queue}";
+                        $metrics['queues'][$queue] = (int) \Illuminate\Support\Facades\Redis::llen($key);
+                    } catch (\Exception $e) {
+                        // Игнорируем
+                    }
+                }
+            }
+
+            // Failed jobs из БД
+            $metrics['failed'] = \DB::table('failed_jobs')->count();
+
+        } catch (\Exception $e) {
+            // Игнорируем
+        }
+
+        return $metrics;
     }
 }

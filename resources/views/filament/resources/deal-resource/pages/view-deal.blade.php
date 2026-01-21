@@ -53,16 +53,24 @@
                 @endforeach
             </div>
 
-            <div class="mt-4 pt-4 border-t dark:border-gray-700 flex items-center justify-between text-sm text-gray-500">
-                <span>Показано {{ count($messages) }} сообщений</span>
-                <x-filament::button 
-                    wire:click="refreshMessages" 
-                    size="sm"
-                    color="gray"
-                    icon="heroicon-o-arrow-path"
-                >
-                    Обновить
-                </x-filament::button>
+            <div class="mt-4 pt-4 border-t dark:border-gray-700">
+                <div class="flex items-center justify-between text-sm text-gray-500 mb-2">
+                    <span>Показано {{ count($messages) }} сообщений</span>
+                    <x-filament::button 
+                        wire:click="refreshMessages" 
+                        size="sm"
+                        color="gray"
+                        icon="heroicon-o-arrow-path"
+                    >
+                        Обновить
+                    </x-filament::button>
+                </div>
+                @if(count($messages) >= \App\Services\MetaApiService::MAX_MESSAGES_PER_CONVERSATION)
+                    <p class="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1">
+                        <x-heroicon-o-information-circle class="w-3.5 h-3.5" />
+                        История ограничена последними {{ \App\Services\MetaApiService::MAX_MESSAGES_PER_CONVERSATION }} сообщениями (политика Meta Platform).
+                    </p>
+                @endif
             </div>
         @endif
     </x-filament::section>

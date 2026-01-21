@@ -2,10 +2,10 @@
 
 namespace App\Console;
 
+use App\Jobs\SendSlaPings;
+use App\Jobs\SyncMetaConversations;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
-use App\Jobs\SyncMetaConversations;
-use App\Jobs\SendSlaPings;
 
 class Kernel extends ConsoleKernel
 {
@@ -15,7 +15,7 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule): void
     {
         // Синхронизация с Meta API каждые 5 минут
-        $schedule->job(new SyncMetaConversations())
+        $schedule->job(new SyncMetaConversations)
             ->everyFiveMinutes()
             ->withoutOverlapping()
             ->runInBackground()
@@ -23,7 +23,7 @@ class Kernel extends ConsoleKernel
             ->appendOutputTo(storage_path('logs/meta-sync.log'));
 
         // SLA пинги каждые 5 минут
-        $schedule->job(new SendSlaPings())
+        $schedule->job(new SendSlaPings)
             ->everyFiveMinutes()
             ->withoutOverlapping()
             ->runInBackground()

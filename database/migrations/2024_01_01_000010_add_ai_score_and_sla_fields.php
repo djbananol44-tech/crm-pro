@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::table('deals', function (Blueprint $table) {
             // AI Lead Scoring
             $table->integer('ai_score')->nullable()->after('ai_summary_at');
-            
+
             // SLA tracking
             $table->timestamp('last_client_message_at')->nullable()->after('ai_score');
             $table->timestamp('last_manager_response_at')->nullable()->after('last_client_message_at');

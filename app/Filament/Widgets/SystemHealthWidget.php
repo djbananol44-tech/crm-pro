@@ -3,8 +3,8 @@
 namespace App\Filament\Widgets;
 
 use App\Models\Setting;
-use Filament\Widgets\Widget;
 use Filament\Notifications\Notification;
+use Filament\Widgets\Widget;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -13,8 +13,11 @@ use Illuminate\Support\Facades\Http;
 class SystemHealthWidget extends Widget
 {
     protected static string $view = 'filament.widgets.system-health-widget';
+
     protected static ?int $sort = -90;
-    protected int | string | array $columnSpan = 'full';
+
+    protected int|string|array $columnSpan = 'full';
+
     protected static ?string $pollingInterval = '120s';
 
     public function getHealthData(): array
@@ -36,11 +39,12 @@ class SystemHealthWidget extends Widget
         try {
             DB::connection()->getPdo();
             $tables = DB::select("SELECT count(*) as cnt FROM information_schema.tables WHERE table_schema = 'public'");
+
             return [
                 'status' => 'ok',
                 'label' => 'База данных',
                 'icon' => '🗄️',
-                'details' => 'PostgreSQL: ' . ($tables[0]->cnt ?? 0) . ' таблиц',
+                'details' => 'PostgreSQL: '.($tables[0]->cnt ?? 0).' таблиц',
             ];
         } catch (\Exception $e) {
             return [
@@ -55,6 +59,7 @@ class SystemHealthWidget extends Widget
     private function checkStorage(): array
     {
         $writable = is_writable(storage_path('logs'));
+
         return [
             'status' => $writable ? 'ok' : 'error',
             'label' => 'Хранилище',
@@ -66,6 +71,7 @@ class SystemHealthWidget extends Widget
     private function checkQueue(): array
     {
         $driver = config('queue.default');
+
         return [
             'status' => 'ok',
             'label' => 'Очередь',
@@ -90,7 +96,7 @@ class SystemHealthWidget extends Widget
             $response = Http::timeout(5)->get('https://graph.facebook.com/me', [
                 'access_token' => $token,
             ]);
-            
+
             if ($response->successful()) {
                 return [
                     'status' => 'ok',
@@ -99,7 +105,7 @@ class SystemHealthWidget extends Widget
                     'details' => $response->json('name') ?? 'Подключено',
                 ];
             }
-            
+
             return [
                 'status' => 'error',
                 'label' => 'Meta API',
@@ -130,9 +136,10 @@ class SystemHealthWidget extends Widget
 
         try {
             $response = Http::timeout(5)->get("https://api.telegram.org/bot{$token}/getMe");
-            
+
             if ($response->successful() && ($response->json('ok') ?? false)) {
                 $username = $response->json('result.username');
+
                 return [
                     'status' => 'ok',
                     'label' => 'Telegram',
@@ -140,7 +147,7 @@ class SystemHealthWidget extends Widget
                     'details' => "@{$username}",
                 ];
             }
-            
+
             return [
                 'status' => 'error',
                 'label' => 'Telegram',
@@ -162,7 +169,7 @@ class SystemHealthWidget extends Widget
         $key = Setting::get('gemini_api_key');
         $enabled = Setting::get('ai_enabled');
         $enabled = $enabled === true || $enabled === 'true' || $enabled === '1';
-        
+
         if (empty($key)) {
             return [
                 'status' => 'warning',
@@ -192,7 +199,7 @@ class SystemHealthWidget extends Widget
     public function refreshHealth(): void
     {
         Cache::forget('system_health_data');
-        
+
         Notification::make()
             ->title('Данные обновлены')
             ->success()
@@ -205,7 +212,7 @@ class SystemHealthWidget extends Widget
     {
         try {
             Artisan::call('queue:restart');
-            
+
             Notification::make()
                 ->title('Воркеры перезапущены')
                 ->body('Команда queue:restart выполнена')
@@ -227,7 +234,7 @@ class SystemHealthWidget extends Widget
         try {
             Artisan::call('crm:check');
             $output = Artisan::output();
-            
+
             Notification::make()
                 ->title('Диагностика завершена')
                 ->body('Результат в консоли')

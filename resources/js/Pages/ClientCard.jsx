@@ -50,7 +50,7 @@ function CopyButton({ text, className = '' }) {
     };
 
     return (
-        <button onClick={handleCopy} className={`p-2 rounded-lg transition-all min-w-[2.75rem] min-h-[2.75rem] flex items-center justify-center ${copied ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/5 text-zinc-500 hover:text-white hover:bg-white/10'} ${className}`}>
+        <button onClick={handleCopy} className={`p-2 rounded-lg transition-all min-w-[2.75rem] min-h-[2.75rem] flex items-center justify-center ${copied ? 'bg-emerald-500/20 text-emerald-400' : 'bg-surface text-zinc-500 hover:text-white hover:bg-surface-2'} ${className}`}>
             {copied ? <Check className="w-4 h-4" strokeWidth={1.5} /> : <Copy className="w-4 h-4" strokeWidth={1.5} />}
         </button>
     );
@@ -101,7 +101,7 @@ function ContactCard({ contact, conversation }) {
                     <div className="flex-1 min-w-0">
                         <h3 className="text-base md:text-lg font-bold text-white truncate">{contact?.name || 'Без имени'}</h3>
                         <div className="flex items-center gap-2 mt-1">
-                            <code className="text-xs text-zinc-400 bg-white/5 px-2 py-1 rounded-lg font-mono truncate max-w-[120px] md:max-w-none">{contact?.psid}</code>
+                            <code className="text-xs text-zinc-400 bg-surface px-2 py-1 rounded-lg font-mono truncate max-w-[120px] md:max-w-none">{contact?.psid}</code>
                             <CopyButton text={contact?.psid} />
                         </div>
                     </div>
@@ -113,7 +113,7 @@ function ContactCard({ contact, conversation }) {
             <div className="p-4 md:p-6 space-y-3 md:space-y-4">
                 {(contact?.first_name || contact?.last_name) && (
                     <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-white/5 flex items-center justify-center flex-shrink-0">
+                        <div className="w-9 h-9 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-surface flex items-center justify-center flex-shrink-0">
                             <User className="w-4 h-4 md:w-5 md:h-5 text-zinc-400" strokeWidth={1.5} />
                         </div>
                         <div className="min-w-0">
@@ -134,6 +134,33 @@ function ContactCard({ contact, conversation }) {
                         </div>
                     </div>
                 )}
+
+                {/* Labels/Tags */}
+                {conversation?.labels && conversation.labels.length > 0 && (
+                    <div className="flex items-start gap-3">
+                        <div className="w-9 h-9 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-surface flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <span className="text-sm">🏷️</span>
+                        </div>
+                        <div className="min-w-0 flex-1">
+                            <p className="text-[10px] md:text-xs text-zinc-500 font-medium uppercase tracking-wider mb-1.5">Теги</p>
+                            <div className="flex flex-wrap gap-1.5">
+                                {conversation.labels.map((label, idx) => (
+                                    <span 
+                                        key={idx} 
+                                        className="px-2 py-0.5 text-xs rounded-full border"
+                                        style={{ 
+                                            borderColor: label.color || '#6366f1',
+                                            color: label.color || '#6366f1',
+                                            backgroundColor: (label.color || '#6366f1') + '20'
+                                        }}
+                                    >
+                                        {label.name}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {conversation?.link && (
@@ -141,7 +168,8 @@ function ContactCard({ contact, conversation }) {
                     <div className="divider" />
                     <div className="p-4 md:p-6">
                         <a href={conversation.link} target="_blank" rel="noopener noreferrer" className="btn-premium w-full justify-center">
-                            <ExternalLink className="w-4 h-4" strokeWidth={1.5} /> Открыть в Meta
+                            <ExternalLink className="w-4 h-4" strokeWidth={1.5} /> 
+                            <span>Open in Meta Business Suite</span>
                         </a>
                     </div>
                 </>
@@ -189,11 +217,11 @@ function AiCard({ summary, score, summaryAt, dealId, aiEnabled }) {
                     </div>
                     <div className="flex items-center gap-1">
                         {summary && (
-                            <button onClick={handleCopy} className={`p-2 md:p-2.5 rounded-lg md:rounded-xl transition-all min-w-[2.75rem] min-h-[2.75rem] flex items-center justify-center ${copied ? 'bg-emerald-500/20 text-emerald-400' : 'hover:bg-white/5 text-zinc-500 hover:text-white'}`}>
+                            <button onClick={handleCopy} className={`p-2 md:p-2.5 rounded-lg md:rounded-xl transition-all min-w-[2.75rem] min-h-[2.75rem] flex items-center justify-center ${copied ? 'bg-emerald-500/20 text-emerald-400' : 'hover:bg-surface text-zinc-500 hover:text-white'}`}>
                                 {copied ? <Check className="w-4 h-4" strokeWidth={1.5} /> : <Copy className="w-4 h-4" strokeWidth={1.5} />}
                             </button>
                         )}
-                        <button onClick={handleRefresh} disabled={refreshing} className="p-2 md:p-2.5 rounded-lg md:rounded-xl hover:bg-white/5 text-zinc-500 hover:text-white disabled:opacity-50 transition-all min-w-[2.75rem] min-h-[2.75rem] flex items-center justify-center">
+                        <button onClick={handleRefresh} disabled={refreshing} className="p-2 md:p-2.5 rounded-lg md:rounded-xl hover:bg-surface text-zinc-500 hover:text-white disabled:opacity-50 transition-all min-w-[2.75rem] min-h-[2.75rem] flex items-center justify-center">
                             <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} strokeWidth={1.5} />
                         </button>
                     </div>
@@ -201,7 +229,7 @@ function AiCard({ summary, score, summaryAt, dealId, aiEnabled }) {
 
                 {score && <div className="mb-3 md:mb-4"><LeadScoreBadge score={score} /></div>}
 
-                <div className="rounded-lg md:rounded-xl bg-white/5 border border-white/10 p-3 md:p-4">
+                <div className="rounded-lg md:rounded-xl bg-surface border border-line/10 p-3 md:p-4">
                     {refreshing ? (
                         <div className="space-y-2 md:space-y-3">
                             <div className="skeleton h-3 md:h-4 w-3/4" />
@@ -223,7 +251,7 @@ function AiCard({ summary, score, summaryAt, dealId, aiEnabled }) {
 }
 
 // === Messages Feed ===
-function MessagesFeed({ messages, contact, dealId, aiEnabled, isMobile }) {
+function MessagesFeed({ messages, contact, dealId, aiEnabled, isMobile, messagesLimited = false, maxMessages = 20 }) {
     const messagesEndRef = useRef(null);
     const [translating, setTranslating] = useState(false);
     const [translation, setTranslation] = useState(null);
@@ -261,9 +289,19 @@ function MessagesFeed({ messages, contact, dealId, aiEnabled, isMobile }) {
 
     return (
         <div className="flex-1 flex flex-col min-h-0">
+            {/* Meta Policy Notice */}
+            {messagesLimited && (
+                <div className="px-3 md:px-5 py-2 bg-zinc-800/50 border-b border-zinc-700/50">
+                    <p className="text-[10px] md:text-xs text-zinc-500 flex items-center gap-1.5">
+                        <span className="text-zinc-600">ℹ️</span>
+                        <span>Показаны последние {maxMessages} сообщений. История ограничена политикой Meta Platform.</span>
+                    </p>
+                </div>
+            )}
+
             {/* Translate Button */}
             {aiEnabled && (
-                <div className="px-3 md:px-5 py-2 md:py-3 border-b border-white/5">
+                <div className="px-3 md:px-5 py-2 md:py-3 border-b border-line/5">
                     <button onClick={handleTranslate} disabled={translating} className="btn-ghost text-xs">
                         {translating ? <RefreshCw className="w-4 h-4 animate-spin" strokeWidth={1.5} /> : <Languages className="w-4 h-4" strokeWidth={1.5} />}
                         <span className="hidden sm:inline">Перевести на русский</span>
@@ -330,7 +368,7 @@ function ResponseTemplates() {
                 {templates.map((t) => (
                     <button key={t.id} onClick={() => handleCopy(t)}
                         className={`w-full text-left px-3 md:px-4 py-2.5 md:py-3 rounded-lg md:rounded-xl border transition-all min-h-[2.75rem] ${
-                            copied === t.id ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' : 'bg-white/5 border-white/10 hover:border-indigo-500/30 hover:bg-indigo-500/10 text-zinc-300'
+                            copied === t.id ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' : 'bg-surface border-line/10 hover:border-indigo-500/30 hover:bg-indigo-500/10 text-zinc-300'
                         }`}>
                         <div className="flex items-center justify-between">
                             <span className="text-xs md:text-sm font-medium">{t.title}</span>
@@ -431,7 +469,7 @@ function DealForm({ deal, managers, statuses, canChangeManager }) {
                             {managers.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
                         </select>
                     ) : (
-                        <div className="flex items-center gap-3 px-3 md:px-4 py-2.5 md:py-3 bg-white/5 rounded-lg md:rounded-xl min-h-[2.75rem]">
+                        <div className="flex items-center gap-3 px-3 md:px-4 py-2.5 md:py-3 bg-surface rounded-lg md:rounded-xl min-h-[2.75rem]">
                             <User className="w-4 h-4 text-zinc-500 flex-shrink-0" strokeWidth={1.5} />
                             <span className="text-sm text-zinc-300 truncate">{deal.manager?.name || 'Не назначен'}</span>
                         </div>
@@ -501,7 +539,7 @@ function ActivityLog({ logs }) {
                 <div className="space-y-2 md:space-y-3 max-h-[200px] md:max-h-[250px] overflow-y-auto scrollbar-hide md:scrollbar-thin">
                     {logs.map((log, i) => (
                         <div key={log.id} className="flex gap-2 md:gap-3 text-sm animate-in" style={{ animationDelay: `${i * 30}ms` }}>
-                            <div className="w-7 h-7 md:w-8 md:h-8 rounded-lg bg-white/5 flex items-center justify-center text-xs md:text-sm flex-shrink-0">
+                            <div className="w-7 h-7 md:w-8 md:h-8 rounded-lg bg-surface flex items-center justify-center text-xs md:text-sm flex-shrink-0">
                                 {log.icon}
                             </div>
                             <div className="flex-1 min-w-0">
@@ -549,7 +587,7 @@ function MobileChatView({ deal, contact, conversation, messages, aiEnabled, onBa
 
             {/* Messages */}
             <div className="flex-1 overflow-hidden bg-[#0a0a0b]">
-                <MessagesFeed messages={messages} contact={contact} dealId={deal.id} aiEnabled={aiEnabled} isMobile={true} />
+                <MessagesFeed messages={messages} contact={contact} dealId={deal.id} aiEnabled={aiEnabled} isMobile={true} messagesLimited={messagesLimited} maxMessages={maxMessages} />
             </div>
 
             {/* Mobile Input Area - Sticky to keyboard */}
@@ -566,7 +604,7 @@ function MobileChatView({ deal, contact, conversation, messages, aiEnabled, onBa
 }
 
 // === Main ===
-export default function ClientCard({ deal, contact, conversation, messages, managers, statuses, isAdmin, canChangeManager, aiEnabled, activityLogs }) {
+export default function ClientCard({ deal, contact, conversation, messages, messagesLimited, maxMessages, managers, statuses, isAdmin, canChangeManager, aiEnabled, activityLogs }) {
     const isMobile = useIsMobile();
     const [showMobileChat, setShowMobileChat] = useState(false);
 
@@ -598,7 +636,7 @@ export default function ClientCard({ deal, contact, conversation, messages, mana
 
             {/* Header */}
             <div className="flex items-center gap-3 md:gap-4 mb-4 md:mb-6">
-                <Link href="/deals" className="p-2 md:p-2.5 text-zinc-500 hover:text-white hover:bg-white/5 rounded-lg md:rounded-xl transition-all min-w-[2.75rem] min-h-[2.75rem] flex items-center justify-center">
+                <Link href="/deals" className="p-2 md:p-2.5 text-zinc-500 hover:text-white hover:bg-surface rounded-lg md:rounded-xl transition-all min-w-[2.75rem] min-h-[2.75rem] flex items-center justify-center">
                     <ArrowLeft className="w-5 h-5" strokeWidth={1.5} />
                 </Link>
                 <div className="flex-1 min-w-0">
@@ -660,8 +698,8 @@ export default function ClientCard({ deal, contact, conversation, messages, mana
                     {/* Center: Messages */}
                     <div className="lg:col-span-5">
                         <div className="glass-card-static flex flex-col min-h-[500px] lg:h-[calc(100vh-180px)] overflow-hidden">
-                            <div className="flex items-center gap-3 px-4 md:px-5 py-3 md:py-4 border-b border-white/5">
-                                <div className="w-9 h-9 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-white/5 flex items-center justify-center flex-shrink-0">
+                            <div className="flex items-center gap-3 px-4 md:px-5 py-3 md:py-4 border-b border-line/5">
+                                <div className="w-9 h-9 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-surface flex items-center justify-center flex-shrink-0">
                                     <MessageSquare className="w-4 h-4 md:w-5 md:h-5 text-zinc-400" strokeWidth={1.5} />
                                 </div>
                                 <div className="min-w-0">
@@ -669,7 +707,7 @@ export default function ClientCard({ deal, contact, conversation, messages, mana
                                     <p className="text-xs text-zinc-500">{messages?.length || 0} сообщений</p>
                                 </div>
                             </div>
-                            <MessagesFeed messages={messages} contact={contact} dealId={deal.id} aiEnabled={aiEnabled} isMobile={false} />
+                            <MessagesFeed messages={messages} contact={contact} dealId={deal.id} aiEnabled={aiEnabled} isMobile={false} messagesLimited={messagesLimited} maxMessages={maxMessages} />
                         </div>
                     </div>
 

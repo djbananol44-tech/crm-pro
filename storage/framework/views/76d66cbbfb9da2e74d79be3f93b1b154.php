@@ -40,7 +40,7 @@
                             <?php echo e(substr($manager->name, 0, 1)); ?>
 
                         </div>
-                        <span class="absolute -bottom-0.5 -right-0.5 block h-3.5 w-3.5 rounded-full ring-2 ring-white dark:ring-gray-900 <?php echo e($manager->isOnline() ? 'bg-green-500' : 'bg-gray-400'); ?>"></span>
+                        <span class="absolute -bottom-0.5 -right-0.5 block h-3.5 w-3.5 rounded-full ring-2 ring-[rgb(11,15,20)] <?php echo e($manager->isOnline() ? 'bg-green-500' : 'bg-gray-400'); ?>"></span>
                     </div>
 
                     

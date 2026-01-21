@@ -27,7 +27,9 @@ class ProcessMetaMessage implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public int $tries = 3;
+
     public int $maxExceptions = 3;
+
     public int $timeout = 120;
 
     public function __construct(
@@ -57,6 +59,7 @@ class ProcessMetaMessage implements ShouldQueue
 
             if (!$senderId) {
                 SystemLog::queue('warning', 'Meta сообщение без sender ID', $this->payload);
+
                 return;
             }
 
@@ -96,7 +99,7 @@ class ProcessMetaMessage implements ShouldQueue
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
-            
+
             throw $e;
         }
     }
@@ -111,12 +114,12 @@ class ProcessMetaMessage implements ShouldQueue
         if (!$contact) {
             // Пробуем получить профиль из Meta API
             $profile = $metaApi->getUserProfile($psid);
-            
+
             $contact = Contact::create([
                 'psid' => $psid,
                 'first_name' => $profile['first_name'] ?? null,
                 'last_name' => $profile['last_name'] ?? null,
-                'name' => trim(($profile['first_name'] ?? '') . ' ' . ($profile['last_name'] ?? '')) ?: "Клиент {$psid}",
+                'name' => trim(($profile['first_name'] ?? '').' '.($profile['last_name'] ?? '')) ?: "Клиент {$psid}",
             ]);
 
             SystemLog::queue('info', 'Создан новый контакт', [
@@ -139,11 +142,15 @@ class ProcessMetaMessage implements ShouldQueue
         $conversation = Conversation::where('conversation_id', $conversationId)->first();
 
         if (!$conversation) {
+            // Строим корректную ссылку на Meta Business Suite
+            $link = $this->buildMetaBusinessSuiteLink($conversationId, $this->platform, $pageId);
+
             $conversation = Conversation::create([
                 'conversation_id' => $conversationId,
                 'contact_id' => $contact->id,
                 'platform' => $this->platform,
-                'link' => "https://business.facebook.com/latest/inbox/all?selected_item_id={$psid}",
+                'page_id' => $pageId,
+                'link' => $link,
                 'updated_time' => now(),
             ]);
         } else {
@@ -151,6 +158,28 @@ class ProcessMetaMessage implements ShouldQueue
         }
 
         return $conversation;
+    }
+
+    /**
+     * Построить ссылку на Meta Business Suite
+     */
+    protected function buildMetaBusinessSuiteLink(string $conversationId, string $platform, ?string $pageId): string
+    {
+        if (empty($pageId)) {
+            return "https://www.facebook.com/messages/t/{$conversationId}";
+        }
+
+        $baseUrl = 'https://business.facebook.com/latest/inbox/all';
+        $params = [
+            'asset_id' => $pageId,
+            'selected_item_id' => $conversationId,
+        ];
+
+        if ($platform === 'instagram') {
+            $params['mailbox_id'] = 'instagram';
+        }
+
+        return $baseUrl.'?'.http_build_query($params);
     }
 
     /**
@@ -205,7 +234,9 @@ class ProcessMetaMessage implements ShouldQueue
      */
     protected function checkPriorityKeywords(Deal $deal, ?string $messageText): void
     {
-        if (!$messageText) return;
+        if (!$messageText) {
+            return;
+        }
 
         $keywords = ['цена', 'сколько', 'купить', 'прайс', 'доставка', 'оплата', 'заказ', 'срочно'];
         $messageLower = mb_strtolower($messageText);
@@ -213,7 +244,7 @@ class ProcessMetaMessage implements ShouldQueue
         foreach ($keywords as $keyword) {
             if (str_contains($messageLower, $keyword)) {
                 $deal->update(['is_priority' => true]);
-                
+
                 SystemLog::queue('info', 'Сделка помечена как приоритетная', [
                     'deal_id' => $deal->id,
                     'keyword' => $keyword,
@@ -234,14 +265,14 @@ class ProcessMetaMessage implements ShouldQueue
 
         // Уведомляем назначенного менеджера
         if ($deal->manager && $deal->manager->telegram_chat_id) {
-            $telegram->sendDealNotification($deal, "📩 Новое сообщение от клиента!");
+            $telegram->sendDealNotification($deal, '📩 Новое сообщение от клиента!');
         }
 
         // Если сделка новая и без менеджера — уведомляем всех
         if ($deal->status === 'New' && !$deal->manager_id) {
             $admins = User::where('role', 'admin')->whereNotNull('telegram_chat_id')->get();
             foreach ($admins as $admin) {
-                $telegram->sendDealNotification($deal, "🆕 Новая заявка без менеджера!", $admin->telegram_chat_id);
+                $telegram->sendDealNotification($deal, '🆕 Новая заявка без менеджера!', $admin->telegram_chat_id);
             }
         }
     }
@@ -251,9 +282,34 @@ class ProcessMetaMessage implements ShouldQueue
      */
     public function failed(\Throwable $exception): void
     {
+        // Извлекаем контекст БЕЗ PII
+        $messaging = $this->payload['messaging'][0] ?? $this->payload;
+        $senderId = $messaging['sender']['id'] ?? 'unknown';
+
+        // Пытаемся найти связанные ID
+        $contact = Contact::where('psid', $senderId)->first();
+        $deal = $contact ? Deal::where('contact_id', $contact->id)
+            ->whereIn('status', ['New', 'In Progress'])
+            ->first() : null;
+
         SystemLog::queue('critical', 'Job ProcessMetaMessage завершился с ошибкой', [
             'error' => $exception->getMessage(),
-            'payload' => $this->payload,
+            'error_class' => get_class($exception),
+            'error_file' => $exception->getFile().':'.$exception->getLine(),
+            // Контекст без PII
+            'contact_id' => $contact?->id,
+            'deal_id' => $deal?->id,
+            'platform' => $this->platform,
+            'attempt' => $this->attempts(),
+            // НЕ логируем payload целиком — может содержать PII
+            'payload_keys' => array_keys($this->payload),
+        ]);
+
+        Log::error('ProcessMetaMessage: Job failed', [
+            'contact_id' => $contact?->id,
+            'deal_id' => $deal?->id,
+            'error' => $exception->getMessage(),
+            'attempt' => $this->attempts(),
         ]);
     }
 }

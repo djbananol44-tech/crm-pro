@@ -7,11 +7,11 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Redis;
-use Illuminate\Support\Facades\Storage;
 
 class CrmCheck extends Command
 {
     protected $signature = 'crm:check {--fix : Попытаться исправить проблемы}';
+
     protected $description = 'Полная диагностика CRM системы';
 
     private array $results = [];
@@ -19,7 +19,7 @@ class CrmCheck extends Command
     public function handle(): int
     {
         $this->newLine();
-        $this->components->info('🔍 CRM Pro — Системная диагностика');
+        $this->components->info('🔍 JGGL CRM — Системная диагностика');
         $this->newLine();
 
         // Проверки
@@ -41,13 +41,15 @@ class CrmCheck extends Command
         $warnings = collect($this->results)->where('status', 'warning')->count();
 
         $this->newLine();
-        
+
         if ($failed === 0) {
             $this->components->info("✅ Все проверки пройдены! ({$passed} OK, {$warnings} предупреждений)");
+
             return Command::SUCCESS;
         }
 
         $this->components->error("❌ Обнаружено проблем: {$failed}");
+
         return Command::FAILURE;
     }
 
@@ -63,6 +65,7 @@ class CrmCheck extends Command
                     'message' => 'Подключено',
                     'details' => substr($version, 0, 50),
                 ];
+
                 return true;
             } catch (\Exception $e) {
                 $this->results['database'] = [
@@ -71,6 +74,7 @@ class CrmCheck extends Command
                     'message' => 'Ошибка подключения',
                     'details' => $e->getMessage(),
                 ];
+
                 return false;
             }
         });
@@ -83,7 +87,7 @@ class CrmCheck extends Command
                 // Проверяем, используется ли Redis
                 $cacheDriver = config('cache.default');
                 $queueDriver = config('queue.default');
-                
+
                 if ($cacheDriver !== 'redis' && $queueDriver !== 'redis') {
                     $this->results['redis'] = [
                         'status' => 'warning',
@@ -91,6 +95,7 @@ class CrmCheck extends Command
                         'message' => 'Не используется',
                         'details' => "Cache: {$cacheDriver}, Queue: {$queueDriver}",
                     ];
+
                     return true;
                 }
 
@@ -101,6 +106,7 @@ class CrmCheck extends Command
                     'message' => 'Подключено',
                     'details' => 'PING → PONG',
                 ];
+
                 return true;
             } catch (\Exception $e) {
                 $this->results['redis'] = [
@@ -109,6 +115,7 @@ class CrmCheck extends Command
                     'message' => 'Недоступен',
                     'details' => 'Используется fallback',
                 ];
+
                 return true;
             }
         });
@@ -142,6 +149,7 @@ class CrmCheck extends Command
                     'message' => 'OK',
                     'details' => 'Все директории доступны для записи',
                 ];
+
                 return true;
             }
 
@@ -151,6 +159,7 @@ class CrmCheck extends Command
                 'message' => 'Проблемы с записью',
                 'details' => implode(', ', $issues),
             ];
+
             return false;
         });
     }
@@ -160,7 +169,7 @@ class CrmCheck extends Command
         $this->components->task('Meta Business API', function () {
             try {
                 $token = Setting::get('meta_access_token');
-                
+
                 if (empty($token)) {
                     $this->results['meta'] = [
                         'status' => 'warning',
@@ -168,6 +177,7 @@ class CrmCheck extends Command
                         'message' => 'Не настроен',
                         'details' => 'Добавьте токен в настройках',
                     ];
+
                     return true;
                 }
 
@@ -183,6 +193,7 @@ class CrmCheck extends Command
                         'message' => 'Подключено',
                         'details' => $name,
                     ];
+
                     return true;
                 }
 
@@ -193,6 +204,7 @@ class CrmCheck extends Command
                     'message' => 'Ошибка',
                     'details' => $error,
                 ];
+
                 return false;
 
             } catch (\Exception $e) {
@@ -202,6 +214,7 @@ class CrmCheck extends Command
                     'message' => 'Ошибка подключения',
                     'details' => $e->getMessage(),
                 ];
+
                 return false;
             }
         });
@@ -212,7 +225,7 @@ class CrmCheck extends Command
         $this->components->task('Telegram Bot API', function () {
             try {
                 $token = Setting::get('telegram_bot_token');
-                
+
                 if (empty($token)) {
                     $this->results['telegram'] = [
                         'status' => 'warning',
@@ -220,6 +233,7 @@ class CrmCheck extends Command
                         'message' => 'Не настроен',
                         'details' => 'Добавьте токен в настройках',
                     ];
+
                     return true;
                 }
 
@@ -233,6 +247,7 @@ class CrmCheck extends Command
                         'message' => 'Подключено',
                         'details' => "@{$username}",
                     ];
+
                     return true;
                 }
 
@@ -243,6 +258,7 @@ class CrmCheck extends Command
                     'message' => 'Ошибка',
                     'details' => $error,
                 ];
+
                 return false;
 
             } catch (\Exception $e) {
@@ -252,6 +268,7 @@ class CrmCheck extends Command
                     'message' => 'Ошибка подключения',
                     'details' => $e->getMessage(),
                 ];
+
                 return false;
             }
         });
@@ -264,7 +281,7 @@ class CrmCheck extends Command
                 $key = Setting::get('gemini_api_key');
                 $enabled = Setting::get('ai_enabled');
                 $enabled = $enabled === true || $enabled === 'true' || $enabled === '1';
-                
+
                 if (empty($key)) {
                     $this->results['gemini'] = [
                         'status' => 'warning',
@@ -272,6 +289,7 @@ class CrmCheck extends Command
                         'message' => 'Не настроен',
                         'details' => 'Добавьте API ключ в настройках',
                     ];
+
                     return true;
                 }
 
@@ -282,6 +300,7 @@ class CrmCheck extends Command
                         'message' => 'Отключен',
                         'details' => 'Включите в настройках',
                     ];
+
                     return true;
                 }
 
@@ -297,6 +316,7 @@ class CrmCheck extends Command
                         'message' => 'Подключено',
                         'details' => 'API ключ валиден',
                     ];
+
                     return true;
                 }
 
@@ -307,6 +327,7 @@ class CrmCheck extends Command
                     'message' => 'Ошибка',
                     'details' => $error,
                 ];
+
                 return false;
 
             } catch (\Exception $e) {
@@ -316,6 +337,7 @@ class CrmCheck extends Command
                     'message' => 'Ошибка подключения',
                     'details' => $e->getMessage(),
                 ];
+
                 return false;
             }
         });
@@ -325,22 +347,104 @@ class CrmCheck extends Command
     {
         $this->components->task('Очередь задач', function () {
             $driver = config('queue.default');
-            
-            $this->results['queue'] = [
-                'status' => 'ok',
-                'name' => 'Очередь',
-                'message' => 'Настроена',
-                'details' => "Driver: {$driver}",
-            ];
-            return true;
+
+            try {
+                // Получаем метрики очередей
+                $metrics = $this->getQueueMetrics();
+
+                $status = 'ok';
+                $message = 'Работает';
+
+                // Проверяем failed jobs
+                if ($metrics['failed'] > 0) {
+                    $status = 'warning';
+                    $message = "{$metrics['failed']} failed jobs";
+                }
+
+                // Проверяем длину очередей
+                $totalPending = array_sum($metrics['queues']);
+                if ($totalPending > 100) {
+                    $status = 'warning';
+                    $message = "Очередь переполнена: {$totalPending}";
+                }
+
+                $queueDetails = [];
+                foreach ($metrics['queues'] as $queue => $count) {
+                    if ($count > 0) {
+                        $queueDetails[] = "{$queue}: {$count}";
+                    }
+                }
+
+                $this->results['queue'] = [
+                    'status' => $status,
+                    'name' => 'Очередь',
+                    'message' => $message,
+                    'details' => $queueDetails ? implode(', ', $queueDetails) : "Driver: {$driver}",
+                    'metrics' => $metrics,
+                ];
+
+                return $status === 'ok';
+
+            } catch (\Exception $e) {
+                $this->results['queue'] = [
+                    'status' => 'warning',
+                    'name' => 'Очередь',
+                    'message' => 'Не удалось получить метрики',
+                    'details' => $e->getMessage(),
+                ];
+
+                return true;
+            }
         });
+    }
+
+    /**
+     * Получить метрики очередей.
+     */
+    public function getQueueMetrics(): array
+    {
+        $metrics = [
+            'driver' => config('queue.default'),
+            'queues' => [
+                'default' => 0,
+                'meta' => 0,
+                'ai' => 0,
+            ],
+            'failed' => 0,
+            'processed_today' => 0,
+        ];
+
+        try {
+            // Для Redis
+            if (config('queue.default') === 'redis') {
+                $connection = config('queue.connections.redis.connection', 'default');
+                $prefix = config('database.redis.options.prefix', '');
+
+                foreach (array_keys($metrics['queues']) as $queue) {
+                    try {
+                        $key = $prefix."queues:{$queue}";
+                        $metrics['queues'][$queue] = (int) Redis::llen($key);
+                    } catch (\Exception $e) {
+                        // Игнорируем
+                    }
+                }
+            }
+
+            // Failed jobs из БД
+            $metrics['failed'] = DB::table('failed_jobs')->count();
+
+        } catch (\Exception $e) {
+            // Игнорируем
+        }
+
+        return $metrics;
     }
 
     private function checkScheduler(): void
     {
         $this->components->task('Планировщик задач', function () {
             $lastRun = cache('scheduler:last_run');
-            
+
             if ($lastRun) {
                 $ago = now()->diffForHumans($lastRun);
                 $this->results['scheduler'] = [
@@ -357,6 +461,7 @@ class CrmCheck extends Command
                     'details' => 'Проверьте cron или scheduler контейнер',
                 ];
             }
+
             return true;
         });
     }
@@ -380,7 +485,7 @@ class CrmCheck extends Command
 
             $rows[] = [
                 $result['name'],
-                $statusIcon . ' ' . ucfirst($result['status']),
+                $statusIcon.' '.ucfirst($result['status']),
                 $result['message'],
                 substr($result['details'] ?? '', 0, 40),
             ];

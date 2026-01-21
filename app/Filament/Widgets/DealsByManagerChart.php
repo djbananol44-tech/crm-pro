@@ -10,11 +10,11 @@ use Illuminate\Support\Facades\DB;
 class DealsByManagerChart extends ChartWidget
 {
     protected static ?string $heading = 'Распределение по менеджерам';
-    
+
     protected static ?string $description = 'Активные сделки в работе у каждого менеджера';
-    
+
     protected static ?int $sort = 3;
-    
+
     protected static ?string $pollingInterval = '60s';
 
     protected static ?string $maxHeight = '300px';
@@ -28,7 +28,7 @@ class DealsByManagerChart extends ChartWidget
 
         $labels = [];
         $counts = [];
-        
+
         // Премиальная палитра цветов
         $colors = [
             'rgba(99, 102, 241, 0.85)',   // indigo

@@ -2,13 +2,12 @@
 
 namespace App\Services;
 
+use App\Models\ActivityLog;
 use App\Models\Deal;
 use App\Models\User;
-use App\Models\ActivityLog;
 use App\Notifications\SecurityViolationNotification;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
-use Carbon\Carbon;
 
 class MetaMessageSecurityService
 {
@@ -63,9 +62,10 @@ class MetaMessageSecurityService
 
             if (!$tag) {
                 $result['allowed'] = false;
-                $result['reason'] = "⚠️ 24-часовое окно истекло {$windowCheck['hours_ago']} ч. назад. " .
-                    "Выберите Message Tag для отправки.";
+                $result['reason'] = "⚠️ 24-часовое окно истекло {$windowCheck['hours_ago']} ч. назад. ".
+                    'Выберите Message Tag для отправки.';
                 $result['risk_level'] = 'medium';
+
                 return $result;
             }
 
@@ -74,6 +74,7 @@ class MetaMessageSecurityService
                 $result['allowed'] = false;
                 $result['reason'] = "❌ Недопустимый Message Tag: {$tag}";
                 $result['risk_level'] = 'high';
+
                 return $result;
             }
         }
@@ -98,8 +99,8 @@ class MetaMessageSecurityService
             $aiCheck = $this->aiCheckMarketing($messageText);
             if ($aiCheck['is_advertising']) {
                 $result['allowed'] = false;
-                $result['reason'] = "🤖 AI определил сообщение как рекламное: {$aiCheck['reason']}. " .
-                    "Риск блокировки аккаунта Meta 100%.";
+                $result['reason'] = "🤖 AI определил сообщение как рекламное: {$aiCheck['reason']}. ".
+                    'Риск блокировки аккаунта Meta 100%.';
                 $result['risk_level'] = 'critical';
 
                 $this->logSecurityViolation($deal, $messageText, $tag, [
@@ -158,10 +159,10 @@ class MetaMessageSecurityService
             return [
                 'is_marketing' => true,
                 'found_words' => $foundWords,
-                'reason' => "🚫 Ошибка безопасности: Обнаружены маркетинговые слова (" .
-                    implode(', ', array_slice($foundWords, 0, 3)) . "). " .
-                    "Тег '{$tag}' запрещено использовать для рекламных рассылок. " .
-                    "Риск блокировки аккаунта Meta 100%.",
+                'reason' => '🚫 Ошибка безопасности: Обнаружены маркетинговые слова ('.
+                    implode(', ', array_slice($foundWords, 0, 3)).'). '.
+                    "Тег '{$tag}' запрещено использовать для рекламных рассылок. ".
+                    'Риск блокировки аккаунта Meta 100%.',
             ];
         }
 
@@ -258,10 +259,10 @@ PROMPT;
             return;
         }
 
-        $message = "⚠️ Попытка нарушения политики Meta!\n\n" .
-            "Сделка: #{$deal->id}\n" .
-            "Менеджер: " . (auth()->user()?->name ?? 'Неизвестно') . "\n" .
-            "Причина: " . ($details['reason'] ?? 'Маркетинговый контент');
+        $message = "⚠️ Попытка нарушения политики Meta!\n\n".
+            "Сделка: #{$deal->id}\n".
+            'Менеджер: '.(auth()->user()?->name ?? 'Неизвестно')."\n".
+            'Причина: '.($details['reason'] ?? 'Маркетинговый контент');
 
         Notification::send($admins, new SecurityViolationNotification($message, $deal));
     }
@@ -308,6 +309,7 @@ PROMPT;
 
         if ($window['in_window']) {
             $remaining = $window['remaining_hours'];
+
             return [
                 'status' => 'open',
                 'label' => "Окно открыто ({$remaining}ч)",

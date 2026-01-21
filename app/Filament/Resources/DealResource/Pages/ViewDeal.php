@@ -5,12 +5,8 @@ namespace App\Filament\Resources\DealResource\Pages;
 use App\Filament\Resources\DealResource;
 use App\Services\MetaApiService;
 use Filament\Actions;
-use Filament\Infolists\Components\Section;
-use Filament\Infolists\Components\TextEntry;
-use Filament\Infolists\Components\ViewEntry;
-use Filament\Infolists\Infolist;
-use Filament\Resources\Pages\ViewRecord;
 use Filament\Notifications\Notification;
+use Filament\Resources\Pages\ViewRecord;
 use Illuminate\Support\Facades\Log;
 
 class ViewDeal extends ViewRecord
@@ -20,10 +16,12 @@ class ViewDeal extends ViewRecord
     protected static string $view = 'filament.resources.deal-resource.pages.view-deal';
 
     public array $messages = [];
+
     public bool $messagesLoaded = false;
+
     public ?string $messagesError = null;
 
-    public function mount(int | string $record): void
+    public function mount(int|string $record): void
     {
         parent::mount($record);
         $this->loadMessages();
@@ -36,17 +34,20 @@ class ViewDeal extends ViewRecord
 
             if (!$metaApi->isConfigured()) {
                 $this->messagesError = 'Meta API не настроен. Укажите настройки в разделе "Настройки".';
+
                 return;
             }
 
             if (!$this->record->conversation) {
                 $this->messagesError = 'Нет связанной беседы.';
+
                 return;
             }
 
+            // Политика Meta: максимум 20 сообщений
             $this->messages = $metaApi->getMessages(
                 $this->record->conversation->conversation_id,
-                50 // Получаем больше сообщений для админа
+                MetaApiService::MAX_MESSAGES_PER_CONVERSATION
             );
 
             $this->messagesLoaded = true;
@@ -57,7 +58,7 @@ class ViewDeal extends ViewRecord
             ]);
 
         } catch (\Exception $e) {
-            $this->messagesError = 'Ошибка загрузки сообщений: ' . $e->getMessage();
+            $this->messagesError = 'Ошибка загрузки сообщений: '.$e->getMessage();
             Log::error('ViewDeal: Ошибка загрузки сообщений', [
                 'deal_id' => $this->record->id,
                 'error' => $e->getMessage(),

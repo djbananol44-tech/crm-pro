@@ -4,25 +4,30 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\UserResource\Pages;
 use App\Models\User;
-use App\Models\ActivityLog;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Infolists;
+use Filament\Infolists\Infolist;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Filament\Infolists;
-use Filament\Infolists\Infolist;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Hash;
 
 class UserResource extends Resource
 {
     protected static ?string $model = User::class;
+
     protected static ?string $navigationIcon = 'heroicon-o-users';
+
     protected static ?string $navigationLabel = 'Пользователи';
+
     protected static ?string $modelLabel = 'Пользователь';
+
     protected static ?string $pluralModelLabel = 'Пользователи';
+
     protected static ?string $navigationGroup = 'Управление';
+
     protected static ?int $navigationSort = 2;
 
     public static function form(Form $form): Form
@@ -125,9 +130,8 @@ class UserResource extends Resource
                 // Средний рейтинг
                 Tables\Columns\TextColumn::make('average_rating')
                     ->label('Рейтинг')
-                    ->getStateUsing(fn (User $record): string => 
-                        $record->getAverageRating() 
-                            ? str_repeat('⭐', (int) $record->getAverageRating()) . " ({$record->getAverageRating()})" 
+                    ->getStateUsing(fn (User $record): string => $record->getAverageRating()
+                            ? str_repeat('⭐', (int) $record->getAverageRating())." ({$record->getAverageRating()})"
                             : '—'
                     ),
 
@@ -167,7 +171,7 @@ class UserResource extends Resource
                         true: fn (Builder $query) => $query->where('last_activity_at', '>=', now()->subMinutes(5)),
                         false: fn (Builder $query) => $query->where(function ($q) {
                             $q->whereNull('last_activity_at')
-                              ->orWhere('last_activity_at', '<', now()->subMinutes(5));
+                                ->orWhere('last_activity_at', '<', now()->subMinutes(5));
                         }),
                     ),
                 Tables\Filters\TernaryFilter::make('has_telegram')
@@ -226,8 +230,7 @@ class UserResource extends Resource
                             ->getStateUsing(fn (User $record): int => $record->getTodayStats()['closed_deals']),
                         Infolists\Components\TextEntry::make('average_rating')
                             ->label('Средний рейтинг')
-                            ->getStateUsing(fn (User $record): string => 
-                                $record->getAverageRating() ? "{$record->getAverageRating()}/5 ⭐" : '—'
+                            ->getStateUsing(fn (User $record): string => $record->getAverageRating() ? "{$record->getAverageRating()}/5 ⭐" : '—'
                             ),
                     ])->columns(4),
 

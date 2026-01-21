@@ -8,7 +8,6 @@ use App\Models\SystemLog;
 use App\Models\User;
 use Filament\Widgets\Widget;
 use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Redis;
@@ -16,12 +15,17 @@ use Illuminate\Support\Facades\Redis;
 class ControlCenterWidget extends Widget
 {
     protected static string $view = 'filament.widgets.control-center-widget';
+
     protected static ?int $sort = -10;
-    protected int | string | array $columnSpan = 'full';
+
+    protected int|string|array $columnSpan = 'full';
 
     public array $services = [];
+
     public array $stats = [];
+
     public array $recentLogs = [];
+
     public bool $isLoading = false;
 
     public function mount(): void
@@ -53,6 +57,7 @@ class ControlCenterWidget extends Widget
         try {
             DB::connection()->getPdo();
             $tables = DB::select("SELECT count(*) as count FROM information_schema.tables WHERE table_schema = 'public'");
+
             return [
                 'status' => 'online',
                 'message' => "PostgreSQL • {$tables[0]->count} таблиц",
@@ -68,6 +73,7 @@ class ControlCenterWidget extends Widget
             $ping = Redis::ping();
             $info = Redis::info('memory');
             $usedMb = round(($info['used_memory'] ?? 0) / 1024 / 1024, 1);
+
             return [
                 'status' => 'online',
                 'message' => "Redis • {$usedMb}MB",
@@ -93,8 +99,10 @@ class ControlCenterWidget extends Widget
 
             if ($response->successful()) {
                 $name = $response->json('name') ?? 'OK';
+
                 return ['status' => 'online', 'message' => "Meta • {$name}"];
             }
+
             return ['status' => 'offline', 'message' => 'Ошибка API'];
         } catch (\Exception $e) {
             return ['status' => 'offline', 'message' => 'Таймаут'];
@@ -114,8 +122,10 @@ class ControlCenterWidget extends Widget
 
             if ($response->successful() && ($response->json('ok') ?? false)) {
                 $username = $response->json('result.username') ?? 'OK';
+
                 return ['status' => 'online', 'message' => "TG • @{$username}"];
             }
+
             return ['status' => 'offline', 'message' => 'Неверный токен'];
         } catch (\Exception $e) {
             return ['status' => 'offline', 'message' => 'Таймаут'];
@@ -173,7 +183,7 @@ class ControlCenterWidget extends Widget
             ->orderByDesc('created_at')
             ->limit(10)
             ->get()
-            ->map(fn($log) => [
+            ->map(fn ($log) => [
                 'id' => $log->id,
                 'service' => $log->service,
                 'icon' => $log->service_icon,
@@ -194,9 +204,9 @@ class ControlCenterWidget extends Widget
         try {
             Artisan::call('optimize:clear');
             Artisan::call('config:cache');
-            
+
             SystemLog::info('system', 'Кэш очищен через Центр управления');
-            
+
             $this->dispatch('notify', [
                 'title' => 'Кэш очищен',
                 'body' => 'Все кэши Laravel успешно очищены',
@@ -217,9 +227,9 @@ class ControlCenterWidget extends Widget
     {
         try {
             Artisan::call('queue:restart');
-            
+
             SystemLog::info('system', 'Очередь перезапущена через Центр управления');
-            
+
             $this->dispatch('notify', [
                 'title' => 'Очередь перезапущена',
                 'body' => 'Сигнал перезапуска отправлен всем воркерам',
@@ -240,7 +250,7 @@ class ControlCenterWidget extends Widget
     {
         try {
             Artisan::call('crm:check');
-            
+
             $this->dispatch('notify', [
                 'title' => 'Диагностика завершена',
                 'body' => 'Результаты записаны в логи',
@@ -261,9 +271,9 @@ class ControlCenterWidget extends Widget
     {
         try {
             Artisan::call('meta:sync-now');
-            
+
             SystemLog::info('system', 'Meta синхронизация запущена через Центр управления');
-            
+
             $this->dispatch('notify', [
                 'title' => 'Синхронизация запущена',
                 'body' => 'Данные из Meta Business Suite синхронизируются',
@@ -284,7 +294,7 @@ class ControlCenterWidget extends Widget
     {
         try {
             Artisan::call('crm:link-bot');
-            
+
             $this->dispatch('notify', [
                 'title' => 'Бот настроен',
                 'body' => Artisan::output(),

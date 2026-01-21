@@ -5,11 +5,11 @@ namespace App\Filament\Resources\ContactResource\Pages;
 use App\Filament\Resources\ContactResource;
 use App\Imports\ContactsImport;
 use Filament\Actions;
-use Filament\Resources\Pages\ListRecords;
 use Filament\Forms\Components\FileUpload;
 use Filament\Notifications\Notification;
-use Maatwebsite\Excel\Facades\Excel;
+use Filament\Resources\Pages\ListRecords;
 use Illuminate\Support\Facades\Log;
+use Maatwebsite\Excel\Facades\Excel;
 
 class ListContacts extends ListRecords
 {
@@ -31,9 +31,9 @@ class ListContacts extends ListRecords
                 ])
                 ->action(function (array $data): void {
                     try {
-                        $path = storage_path('app/public/' . $data['file']);
-                        
-                        $import = new ContactsImport();
+                        $path = storage_path('app/public/'.$data['file']);
+
+                        $import = new ContactsImport;
                         Excel::import($import, $path);
 
                         $created = $import->getCreatedCount();
@@ -58,9 +58,9 @@ class ListContacts extends ListRecords
                     } catch (\Maatwebsite\Excel\Validators\ValidationException $e) {
                         $failures = $e->failures();
                         $errors = [];
-                        
+
                         foreach ($failures as $failure) {
-                            $errors[] = "Строка {$failure->row()}: " . implode(', ', $failure->errors());
+                            $errors[] = "Строка {$failure->row()}: ".implode(', ', $failure->errors());
                         }
 
                         Log::error('ContactsImport: Ошибки валидации', [
@@ -81,12 +81,12 @@ class ListContacts extends ListRecords
 
                         Notification::make()
                             ->title('Ошибка импорта')
-                            ->body('Произошла ошибка при импорте файла: ' . $e->getMessage())
+                            ->body('Произошла ошибка при импорте файла: '.$e->getMessage())
                             ->danger()
                             ->send();
                     }
                 }),
-            
+
             Actions\Action::make('downloadTemplate')
                 ->label('Скачать шаблон')
                 ->icon('heroicon-o-arrow-down-tray')

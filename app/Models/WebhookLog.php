@@ -9,6 +9,7 @@ class WebhookLog extends Model
     protected $fillable = [
         'source',
         'event_type',
+        'event_key',
         'payload',
         'response_code',
         'response_body',
@@ -72,13 +73,30 @@ class WebhookLog extends Model
     }
 
     /**
+     * Проверить, существует ли событие с данным ключом
+     */
+    public static function eventExists(string $source, string $eventKey): bool
+    {
+        return self::where('source', $source)
+            ->where('event_key', $eventKey)
+            ->exists();
+    }
+
+    /**
      * Статус как badge
      */
     public function getStatusBadgeAttribute(): string
     {
-        if (!$this->response_code) return 'pending';
-        if ($this->response_code >= 200 && $this->response_code < 300) return 'success';
-        if ($this->response_code >= 400) return 'error';
+        if (!$this->response_code) {
+            return 'pending';
+        }
+        if ($this->response_code >= 200 && $this->response_code < 300) {
+            return 'success';
+        }
+        if ($this->response_code >= 400) {
+            return 'error';
+        }
+
         return 'warning';
     }
 }

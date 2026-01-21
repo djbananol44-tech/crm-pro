@@ -35,7 +35,7 @@ export default function Login() {
                         <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-to-br from-indigo-500 to-violet-600 shadow-2xl shadow-indigo-500/30 mb-6">
                             <Sparkles className="w-10 h-10 text-white" strokeWidth={1.5} />
                         </div>
-                        <h1 className="text-3xl font-bold text-white mb-2">CRM Pro</h1>
+                        <h1 className="text-3xl font-bold text-white mb-2">JGGL CRM</h1>
                         <p className="text-zinc-500">AI-powered Business Suite</p>
                     </div>
 
@@ -103,7 +103,7 @@ export default function Login() {
                                             onChange={e => setData('remember', e.target.checked)}
                                             className="sr-only peer"
                                         />
-                                        <div className="w-5 h-5 rounded-md bg-white/5 border border-white/10 peer-checked:bg-indigo-500 peer-checked:border-indigo-500 transition-all" />
+                                        <div className="w-5 h-5 rounded-md bg-surface border border-line/10 peer-checked:bg-indigo-500 peer-checked:border-indigo-500 transition-all" />
                                         <svg className="absolute top-1 left-1 w-3 h-3 text-white opacity-0 peer-checked:opacity-100 transition-opacity" viewBox="0 0 12 12" fill="none">
                                             <path d="M2 6L5 9L10 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                                         </svg>
@@ -135,11 +135,11 @@ export default function Login() {
                     <div className="mt-8 text-center animate-in" style={{ animationDelay: '300ms' }}>
                         <p className="text-xs text-zinc-600 mb-3">Тестовые аккаунты</p>
                         <div className="inline-flex gap-4 text-xs">
-                            <div className="px-3 py-2 rounded-lg bg-white/5 border border-white/10">
+                            <div className="px-3 py-2 rounded-lg bg-surface border border-line/10">
                                 <span className="text-zinc-500">Админ:</span>
                                 <span className="text-zinc-300 ml-1">admin@crm.test</span>
                             </div>
-                            <div className="px-3 py-2 rounded-lg bg-white/5 border border-white/10">
+                            <div className="px-3 py-2 rounded-lg bg-surface border border-line/10">
                                 <span className="text-zinc-500">Менеджер:</span>
                                 <span className="text-zinc-300 ml-1">manager@crm.test</span>
                             </div>

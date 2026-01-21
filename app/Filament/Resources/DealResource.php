@@ -7,11 +7,11 @@ use App\Models\Deal;
 use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Infolists;
+use Filament\Infolists\Infolist;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Filament\Infolists;
-use Filament\Infolists\Infolist;
 use Illuminate\Database\Eloquent\Builder;
 
 class DealResource extends Resource
@@ -19,11 +19,11 @@ class DealResource extends Resource
     protected static ?string $model = Deal::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-briefcase';
-    
+
     protected static ?string $navigationLabel = 'Все сделки';
-    
+
     protected static ?string $modelLabel = 'Сделка';
-    
+
     protected static ?string $pluralModelLabel = 'Сделки';
 
     protected static ?string $navigationGroup = 'Управление';
@@ -34,7 +34,7 @@ class DealResource extends Resource
     {
         $user = auth()->user();
         $isAdmin = $user && $user->isAdmin();
-        
+
         return $form
             ->schema([
                 Forms\Components\Section::make('Основная информация')
@@ -61,6 +61,7 @@ class DealResource extends Resource
                                 if ($record && $record->manager_id !== null && !$isAdmin) {
                                     return true;
                                 }
+
                                 return false;
                             }),
                         Forms\Components\Select::make('status')
@@ -283,7 +284,7 @@ class DealResource extends Resource
                             ->prose(),
                         Infolists\Components\TextEntry::make('manager_rating')
                             ->label('Оценка менеджера')
-                            ->formatStateUsing(fn (?int $state): string => $state ? str_repeat('⭐', $state) . " ({$state}/5)" : '—'),
+                            ->formatStateUsing(fn (?int $state): string => $state ? str_repeat('⭐', $state)." ({$state}/5)" : '—'),
                         Infolists\Components\TextEntry::make('manager_review')
                             ->label('Отзыв AI')
                             ->columnSpanFull(),
@@ -342,6 +343,7 @@ class DealResource extends Resource
     public static function getNavigationBadgeColor(): ?string
     {
         $count = static::getModel()::where('status', 'New')->count();
+
         return $count > 0 ? 'danger' : 'primary';
     }
 }

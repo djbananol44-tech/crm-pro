@@ -3,27 +3,25 @@
 namespace App\Imports;
 
 use App\Models\Contact;
-use Maatwebsite\Excel\Concerns\ToModel;
-use Maatwebsite\Excel\Concerns\WithHeadingRow;
-use Maatwebsite\Excel\Concerns\WithValidation;
-use Maatwebsite\Excel\Concerns\WithBatchInserts;
-use Maatwebsite\Excel\Concerns\WithUpserts;
-use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
 use Illuminate\Support\Facades\Log;
+use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
+use Maatwebsite\Excel\Concerns\ToModel;
+use Maatwebsite\Excel\Concerns\WithBatchInserts;
+use Maatwebsite\Excel\Concerns\WithHeadingRow;
+use Maatwebsite\Excel\Concerns\WithUpserts;
+use Maatwebsite\Excel\Concerns\WithValidation;
 
-class ContactsImport implements ToModel, WithHeadingRow, WithValidation, WithBatchInserts, WithUpserts, SkipsEmptyRows
+class ContactsImport implements SkipsEmptyRows, ToModel, WithBatchInserts, WithHeadingRow, WithUpserts, WithValidation
 {
     /**
      * Счётчики для отчёта.
      */
     protected int $created = 0;
+
     protected int $updated = 0;
 
     /**
      * Создание модели из строки CSV.
-     *
-     * @param array $row
-     * @return Contact|null
      */
     public function model(array $row): ?Contact
     {
@@ -38,7 +36,7 @@ class ContactsImport implements ToModel, WithHeadingRow, WithValidation, WithBat
 
         Log::info('ContactsImport: Обработка строки', [
             'psid' => $row['psid'],
-            'name' => $row['first_name'] ?? '' . ' ' . $row['last_name'] ?? '',
+            'name' => $row['first_name'] ?? ''.' '.$row['last_name'] ?? '',
             'action' => $exists ? 'обновление' : 'создание',
         ]);
 
@@ -46,14 +44,12 @@ class ContactsImport implements ToModel, WithHeadingRow, WithValidation, WithBat
             'psid' => $row['psid'],
             'first_name' => $row['first_name'] ?? null,
             'last_name' => $row['last_name'] ?? null,
-            'name' => trim(($row['first_name'] ?? '') . ' ' . ($row['last_name'] ?? '')) ?: null,
+            'name' => trim(($row['first_name'] ?? '').' '.($row['last_name'] ?? '')) ?: null,
         ]);
     }
 
     /**
      * Уникальный ключ для upsert.
-     *
-     * @return string|array
      */
     public function uniqueBy(): string|array
     {
@@ -62,8 +58,6 @@ class ContactsImport implements ToModel, WithHeadingRow, WithValidation, WithBat
 
     /**
      * Правила валидации.
-     *
-     * @return array
      */
     public function rules(): array
     {
@@ -76,8 +70,6 @@ class ContactsImport implements ToModel, WithHeadingRow, WithValidation, WithBat
 
     /**
      * Кастомные сообщения валидации на русском.
-     *
-     * @return array
      */
     public function customValidationMessages(): array
     {
@@ -94,8 +86,6 @@ class ContactsImport implements ToModel, WithHeadingRow, WithValidation, WithBat
 
     /**
      * Размер пакета для вставки.
-     *
-     * @return int
      */
     public function batchSize(): int
     {
@@ -104,8 +94,6 @@ class ContactsImport implements ToModel, WithHeadingRow, WithValidation, WithBat
 
     /**
      * Получить количество созданных записей.
-     *
-     * @return int
      */
     public function getCreatedCount(): int
     {
@@ -114,8 +102,6 @@ class ContactsImport implements ToModel, WithHeadingRow, WithValidation, WithBat
 
     /**
      * Получить количество обновлённых записей.
-     *
-     * @return int
      */
     public function getUpdatedCount(): int
     {

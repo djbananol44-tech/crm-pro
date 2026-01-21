@@ -39,6 +39,7 @@ class Contact extends Model
         }
 
         $parts = array_filter([$this->first_name, $this->last_name]);
+
         return implode(' ', $parts) ?: 'Без имени';
     }
 }

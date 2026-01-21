@@ -4,22 +4,26 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\WebhookLogResource\Pages;
 use App\Models\WebhookLog;
-use Filament\Forms;
-use Filament\Forms\Form;
+use Filament\Infolists\Components;
+use Filament\Infolists\Infolist;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Filament\Infolists\Infolist;
-use Filament\Infolists\Components;
 
 class WebhookLogResource extends Resource
 {
     protected static ?string $model = WebhookLog::class;
+
     protected static ?string $navigationIcon = 'heroicon-o-signal';
+
     protected static ?string $navigationLabel = 'Логи вебхуков';
+
     protected static ?string $modelLabel = 'Лог вебхука';
+
     protected static ?string $pluralModelLabel = 'Логи вебхуков';
+
     protected static ?string $navigationGroup = 'Система';
+
     protected static ?int $navigationSort = 50;
 
     public static function table(Table $table): Table
@@ -29,7 +33,7 @@ class WebhookLogResource extends Resource
                 Tables\Columns\TextColumn::make('id')
                     ->label('ID')
                     ->sortable(),
-                    
+
                 Tables\Columns\TextColumn::make('source')
                     ->label('Источник')
                     ->badge()
@@ -43,12 +47,12 @@ class WebhookLogResource extends Resource
                         'telegram' => '📱 Telegram',
                         default => $state,
                     }),
-                    
+
                 Tables\Columns\TextColumn::make('event_type')
                     ->label('Тип события')
                     ->limit(30)
                     ->searchable(),
-                    
+
                 Tables\Columns\TextColumn::make('response_code')
                     ->label('Код')
                     ->badge()
@@ -58,11 +62,11 @@ class WebhookLogResource extends Resource
                         $state >= 400 => 'danger',
                         default => 'warning',
                     }),
-                    
+
                 Tables\Columns\TextColumn::make('ip_address')
                     ->label('IP')
                     ->toggleable(isToggledHiddenByDefault: true),
-                    
+
                 Tables\Columns\IconColumn::make('error_message')
                     ->label('Ошибка')
                     ->boolean()
@@ -71,12 +75,12 @@ class WebhookLogResource extends Resource
                     ->trueColor('danger')
                     ->falseColor('success')
                     ->getStateUsing(fn ($record) => !empty($record->error_message)),
-                    
+
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Получен')
                     ->dateTime('d.m.Y H:i:s')
                     ->sortable(),
-                    
+
                 Tables\Columns\TextColumn::make('processed_at')
                     ->label('Обработан')
                     ->dateTime('H:i:s')
@@ -91,7 +95,7 @@ class WebhookLogResource extends Resource
                         'meta' => 'Meta (Facebook)',
                         'telegram' => 'Telegram',
                     ]),
-                    
+
                 Tables\Filters\SelectFilter::make('status')
                     ->label('Статус')
                     ->options([
@@ -107,7 +111,7 @@ class WebhookLogResource extends Resource
                             default => $query,
                         };
                     }),
-                    
+
                 Tables\Filters\Filter::make('has_error')
                     ->label('Только с ошибками')
                     ->query(fn ($query) => $query->whereNotNull('error_message')),
@@ -153,7 +157,7 @@ class WebhookLogResource extends Resource
                             ->dateTime('d.m.Y H:i:s'),
                     ])
                     ->columns(3),
-                    
+
                 Components\Section::make('Входящие данные (Payload)')
                     ->schema([
                         Components\TextEntry::make('payload')
@@ -163,7 +167,7 @@ class WebhookLogResource extends Resource
                             ->columnSpanFull(),
                     ])
                     ->collapsible(),
-                    
+
                 Components\Section::make('Ошибка')
                     ->schema([
                         Components\TextEntry::make('error_message')
@@ -194,7 +198,7 @@ class WebhookLogResource extends Resource
             $count = static::getModel()::where('created_at', '>=', now()->subHour())
                 ->whereNotNull('error_message')
                 ->count();
-                
+
             return $count > 0 ? (string) $count : null;
         } catch (\Exception $e) {
             return null;

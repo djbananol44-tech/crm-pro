@@ -2,26 +2,26 @@
 
 namespace App\Jobs;
 
+use App\Models\ActivityLog;
 use App\Models\Deal;
 use App\Models\User;
-use App\Models\ActivityLog;
 use App\Services\AiAnalysisService;
 use App\Services\MetaApiService;
 use App\Services\TelegramService;
+use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Carbon\Carbon;
 
 class EvaluateManagerPerformance implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public int $tries = 2;
+
     public int $timeout = 120;
 
     protected int $dealId;
@@ -37,30 +37,37 @@ class EvaluateManagerPerformance implements ShouldQueue
 
         if (!$deal) {
             Log::warning('EvaluateManagerPerformance: Сделка не найдена', ['deal_id' => $this->dealId]);
+
             return;
         }
 
         if ($deal->manager_rating !== null) {
             Log::info('EvaluateManagerPerformance: Уже оценена', ['deal_id' => $this->dealId]);
+
             return;
         }
 
         if (!$aiService->isAvailable()) {
             Log::info('EvaluateManagerPerformance: AI недоступен');
+
             return;
         }
 
         Log::info('EvaluateManagerPerformance: Начало оценки', ['deal_id' => $this->dealId]);
 
         try {
-            // Получаем сообщения
+            // Получаем сообщения (максимум 20 по политике Meta)
             $messages = [];
             if ($deal->conversation) {
-                $messages = $metaApi->getMessages($deal->conversation->conversation_id, 50);
+                $messages = $metaApi->getMessages(
+                    $deal->conversation->conversation_id,
+                    MetaApiService::MAX_MESSAGES_PER_CONVERSATION
+                );
             }
 
             if (empty($messages)) {
                 Log::info('EvaluateManagerPerformance: Нет сообщений для оценки');
+
                 return;
             }
 
@@ -70,6 +77,7 @@ class EvaluateManagerPerformance implements ShouldQueue
 
             if ($evaluation['rating'] === null) {
                 Log::warning('EvaluateManagerPerformance: Не удалось получить оценку');
+
                 return;
             }
 
@@ -100,7 +108,9 @@ class EvaluateManagerPerformance implements ShouldQueue
      */
     protected function checkManagerDailyRating(?User $manager, TelegramService $telegram): void
     {
-        if (!$manager) return;
+        if (!$manager) {
+            return;
+        }
 
         $today = Carbon::today();
 
@@ -110,7 +120,9 @@ class EvaluateManagerPerformance implements ShouldQueue
             ->whereNotNull('manager_rating')
             ->avg('manager_rating');
 
-        if ($avgRating === null) return;
+        if ($avgRating === null) {
+            return;
+        }
 
         // Если средняя оценка ниже 4.0 — уведомляем админов
         if ($avgRating < 4.0) {
@@ -120,7 +132,9 @@ class EvaluateManagerPerformance implements ShouldQueue
                 ->count();
 
             // Уведомляем только если есть хотя бы 2 оценки
-            if ($dealsCount < 2) return;
+            if ($dealsCount < 2) {
+                return;
+            }
 
             $message = <<<MSG
 ⚠️ <b>Внимание! Качество работы снизилось</b>

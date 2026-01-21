@@ -9,11 +9,11 @@ use Illuminate\Support\Facades\DB;
 class DealsByStatusChart extends ChartWidget
 {
     protected static ?string $heading = 'Воронка продаж';
-    
+
     protected static ?string $description = 'Распределение сделок по этапам';
-    
+
     protected static ?int $sort = 2;
-    
+
     protected static ?string $pollingInterval = '60s';
 
     protected static ?string $maxHeight = '300px';
@@ -27,17 +27,17 @@ class DealsByStatusChart extends ChartWidget
 
         $statuses = [
             'New' => [
-                'label' => 'Новые', 
+                'label' => 'Новые',
                 'color' => 'rgba(99, 102, 241, 0.85)',
                 'border' => 'rgba(99, 102, 241, 1)',
             ],
             'In Progress' => [
-                'label' => 'В работе', 
+                'label' => 'В работе',
                 'color' => 'rgba(245, 158, 11, 0.85)',
                 'border' => 'rgba(245, 158, 11, 1)',
             ],
             'Closed' => [
-                'label' => 'Завершённые', 
+                'label' => 'Завершённые',
                 'color' => 'rgba(16, 185, 129, 0.85)',
                 'border' => 'rgba(16, 185, 129, 1)',
             ],

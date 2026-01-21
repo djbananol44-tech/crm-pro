@@ -35,6 +35,7 @@ class SyncMetaCommand extends Command
 
         if ($platform && !in_array($platform, ['messenger', 'instagram'])) {
             $this->error('Неверная платформа. Используйте: messenger или instagram');
+
             return self::FAILURE;
         }
 

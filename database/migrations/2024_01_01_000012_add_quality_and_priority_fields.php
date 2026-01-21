@@ -12,13 +12,13 @@ return new class extends Migration
         Schema::table('deals', function (Blueprint $table) {
             // Приоритетная сделка (горячие вопросы)
             $table->boolean('is_priority')->default(false)->after('is_viewed');
-            
+
             // AI оценка качества работы менеджера (1-5)
             $table->tinyInteger('manager_rating')->nullable()->after('is_priority');
-            
+
             // AI отзыв о работе менеджера
             $table->text('manager_review')->nullable()->after('manager_rating');
-            
+
             // Когда была проведена оценка
             $table->timestamp('rated_at')->nullable()->after('manager_review');
         });

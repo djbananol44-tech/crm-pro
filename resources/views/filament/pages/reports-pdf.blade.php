@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>CRM Отчёт</title>
+    <title>JGGL CRM — Отчёт</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { 
@@ -96,7 +96,7 @@
 </head>
 <body>
     <div class="header">
-        <h1>📊 CRM Pro — Отчёт</h1>
+        <h1>📊 JGGL CRM — Отчёт</h1>
         <p>Период: {{ $period['start'] }} — {{ $period['end'] }}</p>
     </div>
 
@@ -158,7 +158,7 @@
     </table>
 
     <div class="footer">
-        <p>Сгенерировано: {{ now()->format('d.m.Y H:i') }} | CRM Pro System</p>
+        <p>Сгенерировано: {{ now()->format('d.m.Y H:i') }} | JGGL CRM</p>
     </div>
 </body>
 </html>

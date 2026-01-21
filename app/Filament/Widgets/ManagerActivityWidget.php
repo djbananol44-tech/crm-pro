@@ -13,7 +13,7 @@ class ManagerActivityWidget extends BaseWidget
 
     protected static ?int $sort = 1;
 
-    protected int | string | array $columnSpan = 'full';
+    protected int|string|array $columnSpan = 'full';
 
     protected static ?string $pollingInterval = '15s';
 
@@ -37,35 +37,30 @@ class ManagerActivityWidget extends BaseWidget
                 Tables\Columns\TextColumn::make('user.name')
                     ->label('Менеджер')
                     ->badge()
-                    ->color(fn (ActivityLog $record): string => 
-                        $record->user?->isOnline() ? 'success' : 'gray'
+                    ->color(fn (ActivityLog $record): string => $record->user?->isOnline() ? 'success' : 'gray'
                     )
-                    ->icon(fn (ActivityLog $record): string => 
-                        $record->user?->isOnline() ? 'heroicon-o-signal' : 'heroicon-o-signal-slash'
+                    ->icon(fn (ActivityLog $record): string => $record->user?->isOnline() ? 'heroicon-o-signal' : 'heroicon-o-signal-slash'
                     ),
 
                 Tables\Columns\TextColumn::make('action')
                     ->label('Действие')
-                    ->formatStateUsing(fn (ActivityLog $record): string => 
-                        $record->icon . ' ' . match ($record->action) {
-                            'viewed' => 'Просмотр',
-                            'status_changed' => 'Смена статуса',
-                            'manager_assigned' => 'Назначение',
-                            'comment_added' => 'Комментарий',
-                            'reminder_set' => 'Напоминание',
-                            'login' => 'Вход',
-                            default => $record->action,
-                        }
+                    ->formatStateUsing(fn (ActivityLog $record): string => $record->icon.' '.match ($record->action) {
+                        'viewed' => 'Просмотр',
+                        'status_changed' => 'Смена статуса',
+                        'manager_assigned' => 'Назначение',
+                        'comment_added' => 'Комментарий',
+                        'reminder_set' => 'Напоминание',
+                        'login' => 'Вход',
+                        default => $record->action,
+                    }
                     ),
 
                 Tables\Columns\TextColumn::make('deal.contact.name')
                     ->label('Клиент')
-                    ->description(fn (ActivityLog $record): string => 
-                        $record->deal ? "Сделка #{$record->deal->id}" : ''
+                    ->description(fn (ActivityLog $record): string => $record->deal ? "Сделка #{$record->deal->id}" : ''
                     )
-                    ->url(fn (ActivityLog $record): ?string => 
-                        $record->deal 
-                            ? route('filament.admin.resources.deals.view', $record->deal) 
+                    ->url(fn (ActivityLog $record): ?string => $record->deal
+                            ? route('filament.admin.resources.deals.view', $record->deal)
                             : null
                     ),
 
@@ -95,9 +90,8 @@ class ManagerActivityWidget extends BaseWidget
                 Tables\Actions\Action::make('viewDeal')
                     ->label('Сделка')
                     ->icon('heroicon-o-eye')
-                    ->url(fn (ActivityLog $record): ?string => 
-                        $record->deal 
-                            ? route('filament.admin.resources.deals.view', $record->deal) 
+                    ->url(fn (ActivityLog $record): ?string => $record->deal
+                            ? route('filament.admin.resources.deals.view', $record->deal)
                             : null
                     )
                     ->visible(fn (ActivityLog $record): bool => $record->deal !== null),

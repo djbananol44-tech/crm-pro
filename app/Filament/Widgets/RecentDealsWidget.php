@@ -10,10 +10,10 @@ use Filament\Widgets\TableWidget as BaseWidget;
 class RecentDealsWidget extends BaseWidget
 {
     protected static ?string $heading = 'Последние сделки';
-    
+
     protected static ?int $sort = 4;
-    
-    protected int | string | array $columnSpan = 'full';
+
+    protected int|string|array $columnSpan = 'full';
 
     protected static ?string $pollingInterval = '30s';
 
@@ -32,14 +32,14 @@ class RecentDealsWidget extends BaseWidget
                     ->color('gray')
                     ->size(Tables\Columns\TextColumn\TextColumnSize::ExtraSmall)
                     ->weight('bold'),
-                    
+
                 Tables\Columns\TextColumn::make('contact.name')
                     ->label('Клиент')
                     ->default('—')
                     ->searchable()
                     ->weight('semibold')
                     ->description(fn (Deal $record): string => $record->contact?->psid ?? ''),
-                    
+
                 Tables\Columns\TextColumn::make('conversation.platform')
                     ->label('Источник')
                     ->badge()
@@ -58,7 +58,7 @@ class RecentDealsWidget extends BaseWidget
                         'messenger' => 'heroicon-o-chat-bubble-left-right',
                         default => 'heroicon-o-globe-alt',
                     }),
-                    
+
                 Tables\Columns\TextColumn::make('status')
                     ->label('Статус')
                     ->badge()
@@ -77,26 +77,24 @@ class RecentDealsWidget extends BaseWidget
                         'In Progress' => 'В работе',
                         'Closed' => 'Завершена',
                     }),
-                    
+
                 Tables\Columns\TextColumn::make('manager.name')
                     ->label('Менеджер')
                     ->default('—')
                     ->color('gray')
                     ->icon('heroicon-o-user'),
-                    
+
                 Tables\Columns\TextColumn::make('reminder_at')
                     ->label('Напоминание')
                     ->dateTime('d.m H:i')
-                    ->color(fn (Deal $record): string => 
-                        $record->reminder_at && $record->reminder_at < now() ? 'danger' : 'gray'
+                    ->color(fn (Deal $record): string => $record->reminder_at && $record->reminder_at < now() ? 'danger' : 'gray'
                     )
-                    ->icon(fn (Deal $record): string => 
-                        $record->reminder_at && $record->reminder_at < now() 
-                            ? 'heroicon-o-exclamation-triangle' 
+                    ->icon(fn (Deal $record): string => $record->reminder_at && $record->reminder_at < now()
+                            ? 'heroicon-o-exclamation-triangle'
                             : 'heroicon-o-bell'
                     )
                     ->placeholder('—'),
-                    
+
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Создана')
                     ->since()

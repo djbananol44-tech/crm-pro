@@ -56,7 +56,7 @@
         {{-- Stats & Quick Actions --}}
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {{-- Stats --}}
-            <div class="rounded-2xl bg-white/5 border border-white/10 p-5">
+            <div class="rounded-2xl bg-[rgb(var(--surface))] border border-white/10 p-5">
                 <h3 class="text-sm font-semibold text-white mb-4 flex items-center gap-2">
                     <x-heroicon-o-chart-bar class="w-5 h-5 text-indigo-400" />
                     Статистика
@@ -84,7 +84,7 @@
             </div>
 
             {{-- Quick Actions --}}
-            <div class="rounded-2xl bg-white/5 border border-white/10 p-5">
+            <div class="rounded-2xl bg-[rgb(var(--surface))] border border-white/10 p-5">
                 <h3 class="text-sm font-semibold text-white mb-4 flex items-center gap-2">
                     <x-heroicon-o-bolt class="w-5 h-5 text-amber-400" />
                     Быстрые действия
@@ -111,8 +111,8 @@
 
         {{-- Recent Logs --}}
         @if(count($this->recentLogs) > 0)
-        <div class="rounded-2xl bg-white/5 border border-white/10 overflow-hidden">
-            <div class="px-5 py-4 border-b border-white/5">
+        <div class="rounded-2xl bg-[rgb(var(--surface))] border border-white/10 overflow-hidden">
+            <div class="px-5 py-4 border-b border-white/10">
                 <h3 class="text-sm font-semibold text-white flex items-center gap-2">
                     <x-heroicon-o-document-text class="w-5 h-5 text-zinc-400" />
                     Последние события системы
@@ -120,7 +120,7 @@
             </div>
             <div class="divide-y divide-white/5 max-h-64 overflow-y-auto">
                 @foreach($this->recentLogs as $log)
-                    <div class="px-5 py-3 flex items-center gap-3 hover:bg-white/5 transition-colors">
+                    <div class="px-5 py-3 flex items-center gap-3 hover:bg-white/10 transition-colors">
                         <span class="text-lg flex-shrink-0">{{ $log['icon'] }}</span>
                         <div class="flex-1 min-w-0">
                             <p class="text-sm text-zinc-300 truncate">{{ $log['message'] }}</p>

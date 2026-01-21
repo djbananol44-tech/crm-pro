@@ -2,14 +2,16 @@
 
 namespace App\Jobs;
 
+use App\Models\ActivityLog;
 use App\Models\Contact;
 use App\Models\Conversation;
 use App\Models\Deal;
 use App\Models\User;
-use App\Models\ActivityLog;
 use App\Notifications\MetaApiErrorNotification;
 use App\Services\MetaApiService;
 use App\Services\TelegramService;
+use Carbon\Carbon;
+use Exception;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -18,18 +20,19 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
-use Carbon\Carbon;
-use Exception;
 
 class SyncSingleConversation implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public int $tries = 3;
+
     public int $timeout = 60;
 
     protected string $senderId;
+
     protected string $platform;
+
     protected ?string $messageText;
 
     public function __construct(string $senderId, string $platform = 'messenger', ?string $messageText = null)
@@ -53,6 +56,7 @@ class SyncSingleConversation implements ShouldQueue
 
             if (!$contact) {
                 DB::rollBack();
+
                 return;
             }
 
@@ -61,6 +65,7 @@ class SyncSingleConversation implements ShouldQueue
 
             if (!$conversationData) {
                 DB::commit();
+
                 return;
             }
 
@@ -75,7 +80,7 @@ class SyncSingleConversation implements ShouldQueue
             if (!$deal) {
                 $deal = $this->createDeal($contact, $conversation);
                 $isNewDeal = true;
-                
+
                 // Логируем создание
                 ActivityLog::logDealCreated($deal);
             }
@@ -109,6 +114,7 @@ class SyncSingleConversation implements ShouldQueue
             }
 
             Log::error('SyncSingleConversation: Ошибка', ['error' => $e->getMessage()]);
+
             throw $e;
         }
     }
@@ -126,7 +132,7 @@ class SyncSingleConversation implements ShouldQueue
 
         if (!empty($keywords)) {
             $deal->update(['is_priority' => true]);
-            
+
             $reason = implode(', ', array_slice($keywords, 0, 3));
             ActivityLog::logPrioritySet($deal, true, $reason);
 
@@ -181,11 +187,13 @@ class SyncSingleConversation implements ShouldQueue
         } catch (Exception $e) {
             if (str_contains($e->getMessage(), '401')) {
                 $this->notifyAdminsAboutTokenError($e);
+
                 throw $e;
             }
         }
 
         $contact->save();
+
         return $contact;
     }
 
@@ -197,17 +205,24 @@ class SyncSingleConversation implements ShouldQueue
                 return $conv;
             }
         }
+
         return null;
     }
 
     protected function syncConversation(array $data, MetaApiService $metaApi): Conversation
     {
+        $platform = $metaApi->detectPlatform($data);
+        $pageId = $metaApi->getPageId();
+        $labels = $metaApi->extractLabels($data);
+
         return Conversation::updateOrCreate(
             ['conversation_id' => $data['id']],
             [
                 'updated_time' => Carbon::parse($data['updated_time']),
-                'platform' => $metaApi->detectPlatform($data),
-                'link' => $metaApi->buildConversationLink($data['id']),
+                'platform' => $platform,
+                'page_id' => $pageId,
+                'labels' => $labels,
+                'link' => $metaApi->buildConversationLink($data['id'], $platform, $pageId),
             ]
         );
     }

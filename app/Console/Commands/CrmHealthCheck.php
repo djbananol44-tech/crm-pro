@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Redis;
 class CrmHealthCheck extends Command
 {
     protected $signature = 'crm:check';
+
     protected $description = 'Полная диагностика всех систем CRM';
 
     protected array $results = [];
@@ -20,7 +21,7 @@ class CrmHealthCheck extends Command
     {
         $this->info('');
         $this->info('╔═══════════════════════════════════════════════════════════╗');
-        $this->info('║       🔍 CRM Pro — Диагностика системы                    ║');
+        $this->info('║       🔍 JGGL CRM — Диагностика системы                   ║');
         $this->info('╚═══════════════════════════════════════════════════════════╝');
         $this->info('');
 
@@ -40,8 +41,8 @@ class CrmHealthCheck extends Command
         SystemLog::info('system', 'Запущена диагностика системы', $this->results);
 
         // Возвращаем код ошибки если есть проблемы
-        $hasErrors = collect($this->results)->contains(fn($r) => $r['status'] === '❌');
-        
+        $hasErrors = collect($this->results)->contains(fn ($r) => $r['status'] === '❌');
+
         return $hasErrors ? Command::FAILURE : Command::SUCCESS;
     }
 
@@ -51,9 +52,9 @@ class CrmHealthCheck extends Command
 
         try {
             DB::connection()->getPdo();
-            $version = DB::selectOne("SELECT version()")->version ?? 'Unknown';
+            $version = DB::selectOne('SELECT version()')->version ?? 'Unknown';
             $tables = DB::selectOne("SELECT count(*) as count FROM information_schema.tables WHERE table_schema = 'public'")->count;
-            
+
             $this->results['database'] = [
                 'name' => 'PostgreSQL',
                 'status' => '✅',
@@ -63,7 +64,7 @@ class CrmHealthCheck extends Command
             $this->results['database'] = [
                 'name' => 'PostgreSQL',
                 'status' => '❌',
-                'message' => 'Ошибка: ' . $e->getMessage(),
+                'message' => 'Ошибка: '.$e->getMessage(),
             ];
         }
     }
@@ -86,7 +87,7 @@ class CrmHealthCheck extends Command
             $this->results['redis'] = [
                 'name' => 'Redis',
                 'status' => '❌',
-                'message' => 'Ошибка: ' . $e->getMessage(),
+                'message' => 'Ошибка: '.$e->getMessage(),
             ];
         }
     }
@@ -104,6 +105,7 @@ class CrmHealthCheck extends Command
                 'status' => '⚠️',
                 'message' => 'Не настроен (токен или Page ID отсутствует)',
             ];
+
             return;
         }
 
@@ -131,7 +133,7 @@ class CrmHealthCheck extends Command
             $this->results['meta_api'] = [
                 'name' => 'Meta API',
                 'status' => '❌',
-                'message' => 'Ошибка: ' . $e->getMessage(),
+                'message' => 'Ошибка: '.$e->getMessage(),
             ];
         }
     }
@@ -148,6 +150,7 @@ class CrmHealthCheck extends Command
                 'status' => '⚠️',
                 'message' => 'Не настроен (токен отсутствует)',
             ];
+
             return;
         }
 
@@ -174,7 +177,7 @@ class CrmHealthCheck extends Command
             $this->results['telegram'] = [
                 'name' => 'Telegram Bot',
                 'status' => '❌',
-                'message' => 'Ошибка: ' . $e->getMessage(),
+                'message' => 'Ошибка: '.$e->getMessage(),
             ];
         }
     }
@@ -192,6 +195,7 @@ class CrmHealthCheck extends Command
                 'status' => '⚠️',
                 'message' => 'Не настроен (API ключ отсутствует)',
             ];
+
             return;
         }
 
@@ -201,6 +205,7 @@ class CrmHealthCheck extends Command
                 'status' => '⚠️',
                 'message' => 'Выключен (ai_enabled = false)',
             ];
+
             return;
         }
 
@@ -226,9 +231,9 @@ class CrmHealthCheck extends Command
         $issues = [];
         foreach ($dirs as $dir) {
             if (!is_dir($dir)) {
-                $issues[] = basename($dir) . ' не существует';
+                $issues[] = basename($dir).' не существует';
             } elseif (!is_writable($dir)) {
-                $issues[] = basename($dir) . ' не записываем';
+                $issues[] = basename($dir).' не записываем';
             }
         }
 
@@ -259,7 +264,7 @@ class CrmHealthCheck extends Command
 
             $status = $failed > 5 ? '⚠️' : '✅';
             $message = "default: {$pending}, meta: {$meta}, ai: {$ai}";
-            
+
             if ($failed > 0) {
                 $message .= " | ⚠️ {$failed} ошибок";
             }
@@ -273,7 +278,7 @@ class CrmHealthCheck extends Command
             $this->results['queue'] = [
                 'name' => 'Очередь',
                 'status' => '❌',
-                'message' => 'Ошибка: ' . $e->getMessage(),
+                'message' => 'Ошибка: '.$e->getMessage(),
             ];
         }
     }
@@ -300,16 +305,16 @@ class CrmHealthCheck extends Command
         $this->info('');
 
         // Summary
-        $ok = collect($this->results)->filter(fn($r) => $r['status'] === '✅')->count();
-        $warn = collect($this->results)->filter(fn($r) => $r['status'] === '⚠️')->count();
-        $err = collect($this->results)->filter(fn($r) => $r['status'] === '❌')->count();
+        $ok = collect($this->results)->filter(fn ($r) => $r['status'] === '✅')->count();
+        $warn = collect($this->results)->filter(fn ($r) => $r['status'] === '⚠️')->count();
+        $err = collect($this->results)->filter(fn ($r) => $r['status'] === '❌')->count();
 
         if ($err > 0) {
             $this->error("❌ Найдено {$err} критических проблем!");
         } elseif ($warn > 0) {
             $this->warn("⚠️  Есть {$warn} предупреждений, но система работает.");
         } else {
-            $this->info("✅ Все системы работают нормально!");
+            $this->info('✅ Все системы работают нормально!');
         }
 
         $this->info('');

@@ -1,0 +1,83 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e3]:
+      - navigation [ref=e5]:
+        - button "Меню пользователя" [ref=e9] [cursor=pointer]:
+          - img "Аватар Администратор" [ref=e10]
+      - main [ref=e11]:
+        - generic [ref=e12]:
+          - heading "Инфопанель" [level=1] [ref=e16]
+          - dialog [ref=e61]
+          - dialog [ref=e63]
+          - dialog [ref=e65]
+    - complementary [ref=e66]:
+      - generic [ref=e68]:
+        - link "JGGL CRM" [ref=e70] [cursor=pointer]:
+          - /url: http://localhost:8080/admin
+          - generic [ref=e71]: JGGL CRM
+        - button "Свернуть боковую панель" [ref=e72] [cursor=pointer]:
+          - generic [ref=e73]: Свернуть боковую панель
+          - img [ref=e74]
+      - navigation [ref=e76]:
+        - list [ref=e77]:
+          - listitem [ref=e78]:
+            - list [ref=e79]:
+              - listitem [ref=e80]:
+                - link "Инфопанель" [ref=e81] [cursor=pointer]:
+                  - /url: http://localhost:8080/admin
+                  - img [ref=e82]
+                  - generic [ref=e84]: Инфопанель
+          - listitem [ref=e85]:
+            - generic [ref=e86] [cursor=pointer]:
+              - img [ref=e87]
+              - generic [ref=e90]: Управление
+              - button "Управление" [expanded] [ref=e91]:
+                - generic [ref=e92]: Управление
+                - img [ref=e93]
+            - list [ref=e95]:
+              - listitem [ref=e96]:
+                - link "Все сделки 0" [ref=e97] [cursor=pointer]:
+                  - /url: http://localhost:8080/admin/deals
+                  - generic [ref=e101]: Все сделки
+                  - generic [ref=e105]: "0"
+              - listitem [ref=e106]:
+                - link "Пользователи" [ref=e107] [cursor=pointer]:
+                  - /url: http://localhost:8080/admin/users
+                  - generic [ref=e111]: Пользователи
+          - listitem [ref=e112]:
+            - generic [ref=e113] [cursor=pointer]:
+              - generic [ref=e114]: Система
+              - button "Система" [expanded] [ref=e115]:
+                - generic [ref=e116]: Система
+                - img [ref=e117]
+            - list [ref=e119]:
+              - listitem [ref=e120]:
+                - link "Логи вебхуков" [ref=e121] [cursor=pointer]:
+                  - /url: http://localhost:8080/admin/webhook-logs
+                  - img [ref=e122]
+                  - generic [ref=e124]: Логи вебхуков
+          - listitem [ref=e125]:
+            - generic [ref=e126] [cursor=pointer]:
+              - img [ref=e127]
+              - generic [ref=e129]: Данные
+              - button "Данные" [expanded] [ref=e130]:
+                - generic [ref=e131]: Данные
+                - img [ref=e132]
+            - list [ref=e134]:
+              - listitem [ref=e135]:
+                - link "Контакты" [ref=e136] [cursor=pointer]:
+                  - /url: http://localhost:8080/admin/contacts
+                  - generic [ref=e139]: Контакты
+          - listitem [ref=e140]:
+            - generic [ref=e141] [cursor=pointer]:
+              - img [ref=e142]
+              - generic [ref=e144]: Настройки
+              - button "Настройки" [ref=e145]:
+                - generic [ref=e146]: Настройки
+                - img [ref=e147]
+  - generic:
+    - status
+```

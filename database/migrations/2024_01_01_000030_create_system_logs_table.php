@@ -22,7 +22,7 @@ return new class extends Migration
             $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('deal_id')->nullable()->constrained()->nullOnDelete();
             $table->timestamps();
-            
+
             // Indexes
             $table->index('service');
             $table->index('level');

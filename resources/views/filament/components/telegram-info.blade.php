@@ -1,60 +1,79 @@
-<div class="rounded-xl bg-slate-900/50 border border-sky-500/20 p-5 space-y-5">
-    {{-- Как подключить --}}
-    <div>
-        <h4 class="text-sm font-bold text-sky-300 mb-3 flex items-center gap-2">
-            <span>📱</span> Как подключить Telegram
-        </h4>
-        <ol class="text-sm text-slate-300 space-y-2">
-            <li class="flex items-start gap-2">
-                <span class="w-5 h-5 rounded-full bg-sky-500/20 text-sky-400 flex items-center justify-center text-xs font-bold flex-shrink-0">1</span>
-                <span>Создайте бота через <a href="https://t.me/BotFather" target="_blank" class="text-sky-400 hover:text-sky-300 underline">@BotFather</a></span>
-            </li>
-            <li class="flex items-start gap-2">
-                <span class="w-5 h-5 rounded-full bg-sky-500/20 text-sky-400 flex items-center justify-center text-xs font-bold flex-shrink-0">2</span>
-                <span>Скопируйте токен и вставьте в поле выше</span>
-            </li>
-            <li class="flex items-start gap-2">
-                <span class="w-5 h-5 rounded-full bg-sky-500/20 text-sky-400 flex items-center justify-center text-xs font-bold flex-shrink-0">3</span>
-                <span>Нажмите кнопку <b class="text-sky-300">"Webhook TG"</b></span>
-            </li>
-            <li class="flex items-start gap-2">
-                <span class="w-5 h-5 rounded-full bg-sky-500/20 text-sky-400 flex items-center justify-center text-xs font-bold flex-shrink-0">4</span>
-                <span>Укажите <code class="px-1.5 py-0.5 bg-slate-800 rounded text-sky-300 text-xs">telegram_chat_id</code> в профиле менеджера</span>
-            </li>
-        </ol>
+@php
+    $status = \App\Services\TelegramService::getStatus();
+    $statusColor = match ($status['status']) {
+        'ok' => 'green',
+        'error' => 'red',
+        default => 'gray',
+    };
+    $statusIcon = match ($status['status']) {
+        'ok' => '🟢',
+        'error' => '🔴',
+        default => '⚪',
+    };
+@endphp
+
+<div class="rounded-lg border border-white/10 p-4 bg-[rgb(16,21,28)]">
+    <div class="flex items-center justify-between mb-3">
+        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+            Статус интеграции
+        </span>
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+            {{ $status['status'] === 'ok' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : '' }}
+            {{ $status['status'] === 'error' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' : '' }}
+            {{ $status['status'] === 'disabled' ? 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400' : '' }}
+        ">
+            {{ $statusIcon }} {{ ucfirst($status['status']) }}
+        </span>
     </div>
 
-    {{-- Команды --}}
-    <div class="pt-4 border-t border-slate-700/50">
-        <h4 class="text-sm font-bold text-sky-300 mb-3 flex items-center gap-2">
-            <span>🤖</span> Команды бота
-        </h4>
-        <div class="grid grid-cols-1 gap-2">
-            <div class="flex items-center gap-2 p-2 rounded-lg bg-slate-800/50">
-                <code class="px-2 py-1 bg-slate-700 rounded text-sky-300 text-xs font-mono">/start</code>
-                <span class="text-xs text-slate-400">— приветствие и Chat ID</span>
-            </div>
-            <div class="flex items-center gap-2 p-2 rounded-lg bg-slate-800/50">
-                <code class="px-2 py-1 bg-slate-700 rounded text-sky-300 text-xs font-mono">/me</code>
-                <span class="text-xs text-slate-400">— активные сделки</span>
-            </div>
-            <div class="flex items-center gap-2 p-2 rounded-lg bg-slate-800/50">
-                <code class="px-2 py-1 bg-slate-700 rounded text-sky-300 text-xs font-mono">/help</code>
-                <span class="text-xs text-slate-400">— справка</span>
-            </div>
+    <dl class="grid grid-cols-2 gap-2 text-sm">
+        @if($status['bot_username'])
+        <div>
+            <dt class="text-gray-500 dark:text-gray-400">Бот:</dt>
+            <dd class="text-gray-900 dark:text-gray-100 font-mono">@{{ $status['bot_username'] }}</dd>
         </div>
-    </div>
+        @endif
 
-    {{-- Inline кнопки --}}
-    <div class="pt-4 border-t border-slate-700/50">
-        <h4 class="text-sm font-bold text-sky-300 mb-3 flex items-center gap-2">
-            <span>🔘</span> Inline-кнопки
-        </h4>
-        <div class="flex flex-wrap gap-2">
-            <span class="px-3 py-1.5 rounded-lg bg-indigo-500/20 text-indigo-300 text-xs font-medium">🚀 В работу</span>
-            <span class="px-3 py-1.5 rounded-lg bg-violet-500/20 text-violet-300 text-xs font-medium">🤖 AI Анализ</span>
-            <span class="px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-300 text-xs font-medium">✅ Завершить</span>
-            <span class="px-3 py-1.5 rounded-lg bg-slate-500/20 text-slate-300 text-xs font-medium">🔗 Открыть</span>
+        <div>
+            <dt class="text-gray-500 dark:text-gray-400">Режим:</dt>
+            <dd class="text-gray-900 dark:text-gray-100">
+                @if($status['mode'] === 'webhook')
+                    🔗 Webhook
+                @else
+                    🔄 Polling
+                @endif
+            </dd>
         </div>
+
+        @if($status['webhook_url'])
+        <div class="col-span-2">
+            <dt class="text-gray-500 dark:text-gray-400">Webhook URL:</dt>
+            <dd class="text-gray-900 dark:text-gray-100 font-mono text-xs break-all">
+                {{ $status['webhook_url'] }}
+            </dd>
+        </div>
+        @endif
+
+        @if($status['last_error'])
+        <div class="col-span-2">
+            <dt class="text-red-500 dark:text-red-400">Последняя ошибка:</dt>
+            <dd class="text-red-700 dark:text-red-300 text-xs">{{ $status['last_error'] }}</dd>
+        </div>
+        @endif
+
+        @if($status['last_check_at'])
+        <div class="col-span-2 text-xs text-gray-400">
+            Последняя проверка: {{ \Carbon\Carbon::parse($status['last_check_at'])->diffForHumans() }}
+        </div>
+        @endif
+    </dl>
+
+    <div class="mt-3 pt-3 border-t border-white/10">
+        <p class="text-xs text-gray-500 dark:text-gray-400">
+            💡 Сохраните токен — бот активируется автоматически.
+            @if($status['mode'] === 'webhook')
+            <br>Webhook защищён secret_token (проверяется X-Telegram-Bot-Api-Secret-Token).
+            @endif
+        </p>
     </div>
 </div>

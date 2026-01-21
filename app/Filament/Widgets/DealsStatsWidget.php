@@ -9,10 +9,10 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
 class DealsStatsWidget extends BaseWidget
 {
     protected static ?string $pollingInterval = '30s';
-    
+
     protected static ?int $sort = 1;
 
-    protected int | string | array $columnSpan = 'full';
+    protected int|string|array $columnSpan = 'full';
 
     protected function getStats(): array
     {
@@ -85,7 +85,7 @@ class DealsStatsWidget extends BaseWidget
     protected function getWeeklyDealsChart(): array
     {
         $data = [];
-        
+
         for ($i = 6; $i >= 0; $i--) {
             $date = now()->subDays($i)->toDateString();
             $data[] = Deal::whereDate('created_at', $date)->count();
@@ -100,7 +100,7 @@ class DealsStatsWidget extends BaseWidget
     protected function getWeeklyClosedChart(): array
     {
         $data = [];
-        
+
         for ($i = 6; $i >= 0; $i--) {
             $date = now()->subDays($i)->toDateString();
             $data[] = Deal::where('status', 'Closed')
@@ -119,8 +119,9 @@ class DealsStatsWidget extends BaseWidget
         if ($total === 0) {
             return 'Нет сделок';
         }
-        
+
         $percentage = round(($inProgress / $total) * 100);
+
         return "{$percentage}% от общего числа";
     }
 
@@ -132,8 +133,9 @@ class DealsStatsWidget extends BaseWidget
         if ($total === 0) {
             return 'Нет сделок';
         }
-        
+
         $percentage = round(($closed / $total) * 100);
+
         return "Конверсия: {$percentage}%";
     }
 }

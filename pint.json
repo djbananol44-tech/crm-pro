@@ -1,0 +1,19 @@
+{
+    "preset": "laravel",
+    "rules": {
+        "concat_space": {
+            "spacing": "none"
+        },
+        "not_operator_with_successor_space": false,
+        "simplified_null_return": true,
+        "blank_line_before_statement": {
+            "statements": ["return", "throw", "try"]
+        }
+    },
+    "exclude": [
+        "vendor",
+        "node_modules",
+        "storage",
+        "bootstrap/cache"
+    ]
+}

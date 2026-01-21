@@ -1,0 +1,191 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# JGGL CRM — Continuous Integration
+# ═══════════════════════════════════════════════════════════════════════════════
+#
+# Triggers: push, pull_request (все ветки)
+# Jobs:
+#   - php: Tests + Code Style (Pint)
+#   - js: Build frontend assets
+#
+# ═══════════════════════════════════════════════════════════════════════════════
+
+name: 🧪 CI
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - develop
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.gitignore'
+  pull_request:
+    branches:
+      - main
+      - master
+      - develop
+  # Allow calling from other workflows
+  workflow_call:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────────────────
+  # PHP: Tests + Code Style
+  # ─────────────────────────────────────────────────────────────────────────────
+  php:
+    name: 🐘 PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    
+    strategy:
+      fail-fast: true
+      matrix:
+        php: ['8.3']
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: testing
+          POSTGRES_PASSWORD: testing
+          POSTGRES_DB: testing
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U testing"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🐘 Setup PHP ${{ matrix.php }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: pdo_pgsql, pgsql, redis, mbstring, bcmath, intl, gd, zip
+          coverage: none
+          tools: composer:v2
+
+      - name: 📦 Get Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: 💾 Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: 📥 Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader --no-progress
+
+      - name: 📝 Copy .env
+        run: |
+          cp .env.example .env || cat > .env << 'EOF'
+          APP_NAME="JGGL CRM"
+          APP_ENV=testing
+          APP_KEY=
+          APP_DEBUG=true
+          APP_URL=http://localhost
+
+          DB_CONNECTION=pgsql
+          DB_HOST=127.0.0.1
+          DB_PORT=5432
+          DB_DATABASE=testing
+          DB_USERNAME=testing
+          DB_PASSWORD=testing
+
+          CACHE_DRIVER=redis
+          QUEUE_CONNECTION=sync
+          SESSION_DRIVER=redis
+
+          REDIS_HOST=127.0.0.1
+          REDIS_PORT=6379
+          EOF
+
+      - name: 🔑 Generate app key
+        run: php artisan key:generate
+
+      - name: 🗄️ Run migrations
+        run: php artisan migrate --force --no-interaction
+
+      - name: 🧪 Run tests
+        run: php artisan test --parallel --no-interaction
+        env:
+          DB_CONNECTION: pgsql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_DATABASE: testing
+          DB_USERNAME: testing
+          DB_PASSWORD: testing
+
+      - name: 🎨 Check code style (Pint)
+        run: ./vendor/bin/pint --test
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # JavaScript: Build frontend
+  # ─────────────────────────────────────────────────────────────────────────────
+  js:
+    name: 🟨 Node.js
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 📥 Install npm dependencies
+        run: npm ci
+
+      - name: 🏗️ Build assets
+        run: npm run build
+
+      - name: 📊 Check bundle size
+        run: |
+          echo "## 📦 Build output" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          ls -lah public/build/assets/ 2>/dev/null || echo "No assets found"
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Summary
+  # ─────────────────────────────────────────────────────────────────────────────
+  ci-success:
+    name: ✅ CI Success
+    runs-on: ubuntu-latest
+    needs: [php, js]
+    if: always()
+    
+    steps:
+      - name: Check all jobs
+        run: |
+          if [[ "${{ needs.php.result }}" != "success" ]] || [[ "${{ needs.js.result }}" != "success" ]]; then
+            echo "❌ CI failed"
+            exit 1
+          fi
+          echo "✅ All checks passed!"
