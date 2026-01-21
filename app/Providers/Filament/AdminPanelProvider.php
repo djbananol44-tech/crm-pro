@@ -59,6 +59,9 @@ class AdminPanelProvider extends PanelProvider
             // Виджеты
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([
+                \App\Filament\Widgets\ControlCenterWidget::class,
+                \App\Filament\Widgets\ApiStatusWidget::class,
+                \App\Filament\Widgets\SystemHealthWidget::class,
                 \App\Filament\Widgets\ManagerPresenceWidget::class,
                 \App\Filament\Widgets\DealsStatsWidget::class,
                 \App\Filament\Widgets\DealsByStatusChart::class,

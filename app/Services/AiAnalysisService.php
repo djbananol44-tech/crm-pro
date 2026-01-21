@@ -20,7 +20,9 @@ class AiAnalysisService
     public function __construct()
     {
         $this->apiKey = Setting::get('gemini_api_key');
-        $this->enabled = Setting::get('ai_enabled', false);
+        $aiEnabled = Setting::get('ai_enabled', false);
+        // Поддержка строки "true"/"false" и boolean
+        $this->enabled = $aiEnabled === true || $aiEnabled === 'true' || $aiEnabled === '1';
     }
 
     public function isAvailable(): bool

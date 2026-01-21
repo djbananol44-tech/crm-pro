@@ -3,9 +3,9 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 import { formatDistanceToNow, isToday, parseISO, differenceInMinutes } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { 
-    Search, Filter, Bell, BellOff, Clock, User, Flame, TrendingUp, Zap,
-    MessageSquare, Instagram, ChevronRight, RefreshCw, AlertTriangle,
-    FileText, Eye, Briefcase, CheckCircle, Hourglass, Timer, Star, AlertCircle
+    Search, Filter, Bell, BellOff, Clock, User, Flame, Zap,
+    MessageSquare, ChevronRight, RefreshCw, 
+    FileText, Briefcase, CheckCircle, Hourglass, Timer, Star, AlertCircle, TrendingUp, X
 } from 'lucide-react';
 import MainLayout from '../Layouts/MainLayout';
 
@@ -58,84 +58,73 @@ function isSlaOverdue(deal) {
     return differenceInMinutes(new Date(), clientTime) >= 30;
 }
 
-// === Components ===
-function StatCard({ icon: Icon, label, value, color = 'indigo', delay = 0 }) {
-    const gradients = {
-        indigo: 'gradient-indigo',
-        emerald: 'gradient-emerald',
-        amber: 'gradient-amber',
-        rose: 'gradient-rose',
-        violet: 'gradient-violet',
+// === Bento Stats Card ===
+function BentoStat({ icon: Icon, label, value, trend, color, size = 'normal' }) {
+    const colors = {
+        indigo: { bg: 'from-indigo-500/20 to-violet-500/10', icon: 'from-indigo-500 to-violet-600', text: 'text-indigo-400' },
+        emerald: { bg: 'from-emerald-500/20 to-teal-500/10', icon: 'from-emerald-500 to-teal-600', text: 'text-emerald-400' },
+        amber: { bg: 'from-amber-500/20 to-orange-500/10', icon: 'from-amber-500 to-orange-600', text: 'text-amber-400' },
+        rose: { bg: 'from-rose-500/20 to-pink-500/10', icon: 'from-rose-500 to-pink-600', text: 'text-rose-400' },
     };
+    const c = colors[color] || colors.indigo;
 
     return (
-        <div className="card p-6 hover-lift animate-fade-in-up" style={{ animationDelay: `${delay}ms` }}>
-            <div className="flex items-center gap-5">
-                <div className={`stat-icon ${gradients[color]} shadow-lg`}>
-                    <Icon className="w-6 h-6 text-white" strokeWidth={1.5} />
+        <div className={`glass-card p-4 md:p-6 ${size === 'large' ? 'bento-item-large' : ''}`}>
+            <div className="flex items-start justify-between mb-2 md:mb-4">
+                <div className={`w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-gradient-to-br ${c.icon} flex items-center justify-center shadow-lg`}>
+                    <Icon className="w-5 h-5 md:w-6 md:h-6 text-white" strokeWidth={1.5} />
                 </div>
-                <div className="flex-1">
-                    <p className="text-sm text-slate-500 font-medium mb-0.5">{label}</p>
-                    <p className="text-3xl font-bold text-slate-900 tracking-tight">{value}</p>
-                </div>
+                {trend && (
+                    <span className={`hidden md:flex items-center gap-1 text-xs font-medium ${c.text}`}>
+                        <TrendingUp className="w-3 h-3" strokeWidth={2} />
+                        {trend}
+                    </span>
+                )}
             </div>
+            <p className="text-2xl md:text-3xl font-bold text-white mb-0.5 md:mb-1">{value}</p>
+            <p className="text-xs md:text-sm text-zinc-500 truncate">{label}</p>
         </div>
     );
 }
 
+// === Lead Score Badge ===
 function LeadScore({ score }) {
     if (!score) return null;
-    
     const isHot = score > 80;
-    const isWarm = score > 60;
     
     return (
-        <div className={`
-            inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-bold
-            ${isHot ? 'bg-orange-100 text-orange-700 animate-pulse' : 
-              isWarm ? 'bg-yellow-100 text-yellow-700' : 
-              'bg-slate-100 text-slate-600'}
-        `}>
-            {isHot && <Zap className="w-3 h-3" strokeWidth={2} />}
-            {score}
+        <div className={`ai-score ${isHot ? 'ai-score-hot' : ''}`}>
+            {isHot && <Zap className="w-4 h-4 text-amber-400 absolute -top-1 -right-1" strokeWidth={2} />}
+            <span className={isHot ? 'text-amber-400' : 'text-violet-400'}>{score}</span>
         </div>
     );
 }
 
+// === Manager Rating ===
 function ManagerRating({ rating }) {
     if (!rating) return null;
-    
-    const stars = [];
-    for (let i = 1; i <= 5; i++) {
-        stars.push(
-            <Star 
-                key={i} 
-                className={`w-3 h-3 ${i <= rating ? 'text-yellow-500 fill-yellow-500' : 'text-slate-300'}`} 
-                strokeWidth={1.5} 
-            />
-        );
-    }
-    
     return (
-        <div className="inline-flex items-center gap-0.5" title={`Оценка: ${rating}/5`}>
-            {stars}
+        <div className="hidden md:flex items-center gap-0.5" title={`Оценка: ${rating}/5`}>
+            {[1, 2, 3, 4, 5].map(i => (
+                <Star key={i} className={`w-3 h-3 ${i <= rating ? 'text-amber-400 fill-amber-400' : 'text-zinc-600'}`} strokeWidth={1.5} />
+            ))}
         </div>
     );
 }
 
+// === Status Pill ===
 function StatusPill({ status, dealId }) {
     const [isOpen, setIsOpen] = useState(false);
     const [updating, setUpdating] = useState(false);
     const ref = useRef(null);
 
     const config = {
-        'New': { label: 'Новая', class: 'pill-new', icon: Briefcase },
-        'In Progress': { label: 'В работе', class: 'pill-progress', icon: Hourglass },
-        'Closed': { label: 'Закрыта', class: 'pill-closed', icon: CheckCircle },
+        'New': { label: 'Новая', class: 'badge badge-new' },
+        'In Progress': { label: 'В работе', class: 'badge badge-progress' },
+        'Closed': { label: 'Закрыта', class: 'badge badge-closed' },
     };
 
     const current = config[status] || config['New'];
-    const Icon = current.icon;
 
     useEffect(() => {
         const handleClickOutside = (e) => {
@@ -156,53 +145,113 @@ function StatusPill({ status, dealId }) {
 
     return (
         <div className="relative" ref={ref}>
-            <button onClick={() => setIsOpen(!isOpen)} disabled={updating} className={`pill ${current.class}`}>
-                {updating ? <RefreshCw className="w-3.5 h-3.5 animate-spin" strokeWidth={1.5} /> : <Icon className="w-3.5 h-3.5" strokeWidth={1.5} />}
-                <span>{current.label}</span>
+            <button onClick={() => setIsOpen(!isOpen)} disabled={updating} className={`${current.class} min-h-[2.75rem] px-3`}>
+                {updating && <RefreshCw className="w-3 h-3 animate-spin" strokeWidth={1.5} />}
+                <span className="hidden sm:inline">{current.label}</span>
+                <span className="sm:hidden">{current.label.slice(0, 3)}</span>
             </button>
             {isOpen && (
-                <div className="absolute z-50 mt-2 w-40 bg-white rounded-2xl border border-slate-200/50 py-2 left-0 animate-scale-in shadow-xl">
-                    {Object.entries(config).map(([key, cfg]) => {
-                        const ItemIcon = cfg.icon;
-                        return (
-                            <button key={key} onClick={() => handleChange(key)}
-                                className={`flex items-center gap-2.5 w-full px-4 py-2.5 text-xs font-medium transition-all ${key === status ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50'}`}>
-                                <ItemIcon className="w-4 h-4" strokeWidth={1.5} />
-                                {cfg.label}
-                            </button>
-                        );
-                    })}
+                <div className="absolute z-50 mt-2 w-36 bg-zinc-900/95 backdrop-blur-xl rounded-xl border border-white/10 py-1 right-0 shadow-2xl animate-in">
+                    {Object.entries(config).map(([key, cfg]) => (
+                        <button key={key} onClick={() => handleChange(key)}
+                            className={`w-full px-3 py-2.5 text-xs text-left transition-all min-h-[2.75rem] ${key === status ? 'text-white bg-white/5' : 'text-zinc-400 hover:text-white hover:bg-white/5'}`}>
+                            {cfg.label}
+                        </button>
+                    ))}
                 </div>
             )}
         </div>
     );
 }
 
-function Filters({ filters, statuses, managers, isAdmin, onFilter }) {
+// === Mobile Filters (Sheet) ===
+function MobileFilters({ isOpen, onClose, filters, statuses, managers, isAdmin, onFilter }) {
+    const [local, setLocal] = useState(filters);
+
+    const handleApply = () => {
+        onFilter(local);
+        onClose();
+    };
+
+    const handleReset = () => {
+        setLocal({});
+        onFilter({});
+        onClose();
+    };
+
+    if (!isOpen) return null;
+
+    return (
+        <>
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50" onClick={onClose} />
+            <div className="fixed bottom-0 left-0 right-0 z-50 bg-zinc-900/95 backdrop-blur-xl rounded-t-3xl border-t border-white/10 p-4 pb-8 animate-in safe-bottom">
+                <div className="w-10 h-1 bg-zinc-700 rounded-full mx-auto mb-4" />
+                <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-white">Фильтры</h3>
+                    <button onClick={onClose} className="p-2 text-zinc-400 hover:text-white min-w-[2.75rem] min-h-[2.75rem] flex items-center justify-center">
+                        <X className="w-5 h-5" strokeWidth={1.5} />
+                    </button>
+                </div>
+                
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-xs text-zinc-500 uppercase tracking-wider mb-2">Поиск</label>
+                        <input type="text" className="input-premium" placeholder="Имя, PSID..."
+                            value={local.search || ''} onChange={(e) => setLocal({ ...local, search: e.target.value })} />
+                    </div>
+                    <div>
+                        <label className="block text-xs text-zinc-500 uppercase tracking-wider mb-2">Статус</label>
+                        <select className="input-premium" value={local.status || ''} onChange={(e) => setLocal({ ...local, status: e.target.value })}>
+                            <option value="">Все статусы</option>
+                            {statuses.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+                        </select>
+                    </div>
+                    {isAdmin && (
+                        <div>
+                            <label className="block text-xs text-zinc-500 uppercase tracking-wider mb-2">Менеджер</label>
+                            <select className="input-premium" value={local.manager_id || ''} onChange={(e) => setLocal({ ...local, manager_id: e.target.value })}>
+                                <option value="">Все менеджеры</option>
+                                {managers.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+                            </select>
+                        </div>
+                    )}
+                </div>
+
+                <div className="flex gap-3 mt-6">
+                    <button onClick={handleReset} className="btn-ghost flex-1">Сбросить</button>
+                    <button onClick={handleApply} className="btn-premium flex-1">Применить</button>
+                </div>
+            </div>
+        </>
+    );
+}
+
+// === Desktop Filters ===
+function DesktopFilters({ filters, statuses, managers, isAdmin, onFilter }) {
     const [local, setLocal] = useState(filters);
 
     return (
-        <div className="card-glass p-5 mb-6 animate-fade-in">
-            <div className="flex flex-wrap items-center gap-4">
-                <div className="flex-1 min-w-[240px]">
+        <div className="hidden md:block glass-card-static p-4 md:p-5 mb-4 md:mb-6">
+            <div className="flex flex-wrap items-center gap-3">
+                <div className="flex-1 min-w-[200px]">
                     <div className="relative">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" strokeWidth={1.5} />
-                        <input type="text" className="input pl-11" placeholder="Поиск..."
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" strokeWidth={1.5} />
+                        <input type="text" className="input-premium pl-11" placeholder="Поиск по имени, PSID..."
                             value={local.search || ''} onChange={(e) => setLocal({ ...local, search: e.target.value })}
                             onKeyDown={(e) => e.key === 'Enter' && onFilter(local)} />
                     </div>
                 </div>
-                <select className="input w-auto min-w-[150px]" value={local.status || ''} onChange={(e) => setLocal({ ...local, status: e.target.value })}>
+                <select className="input-premium w-auto" value={local.status || ''} onChange={(e) => setLocal({ ...local, status: e.target.value })}>
                     <option value="">Все статусы</option>
                     {statuses.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
                 </select>
                 {isAdmin && (
-                    <select className="input w-auto min-w-[170px]" value={local.manager_id || ''} onChange={(e) => setLocal({ ...local, manager_id: e.target.value })}>
+                    <select className="input-premium w-auto" value={local.manager_id || ''} onChange={(e) => setLocal({ ...local, manager_id: e.target.value })}>
                         <option value="">Все менеджеры</option>
                         {managers.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
                     </select>
                 )}
-                <button onClick={() => onFilter(local)} className="btn-primary">
+                <button onClick={() => onFilter(local)} className="btn-premium">
                     <Filter className="w-4 h-4" strokeWidth={1.5} /> Найти
                 </button>
                 <button onClick={() => { setLocal({}); onFilter({}); }} className="btn-ghost">Сбросить</button>
@@ -211,7 +260,8 @@ function Filters({ filters, statuses, managers, isAdmin, onFilter }) {
     );
 }
 
-function DealRow({ deal, index }) {
+// === Deal Card ===
+function DealCard({ deal, index }) {
     const now = new Date();
     const isReminderDue = deal.reminder_at && new Date(deal.reminder_at) <= now;
     const isUnviewed = !deal.is_viewed;
@@ -222,104 +272,119 @@ function DealRow({ deal, index }) {
     const isPriority = deal.is_priority && deal.status !== 'Closed';
 
     return (
-        <div className={`
-            card-glass p-5 group animate-fade-in-up transition-all duration-300
-            hover:-translate-y-0.5 hover:shadow-xl
-            ${isPriority ? 'priority-pulse ring-2 ring-red-500 bg-red-50/30' : ''}
-            ${slaOverdue && !isPriority ? 'sla-alert ring-2 ring-orange-400' : ''}
-            ${isReminderDue && !slaOverdue && !isPriority ? 'reminder-alert' : ''}
-            ${isUnviewed ? 'border-l-3 border-l-indigo-500' : ''}
-        `} style={{ animationDelay: `${250 + index * 40}ms` }}>
-            <div className="flex items-center gap-5">
-                {/* Avatar */}
-                <div className="relative flex-shrink-0">
-                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-white font-semibold text-lg transition-transform duration-300 group-hover:scale-105
-                        ${isPriority ? 'bg-gradient-to-br from-red-500 to-rose-600 shadow-lg shadow-red-500/30 animate-pulse' :
-                          isHotLead ? 'bg-gradient-to-br from-orange-500 to-red-500 shadow-lg shadow-orange-500/30' :
-                          isUnviewed ? 'gradient-indigo shadow-lg shadow-indigo-500/30' : 'bg-slate-200 text-slate-600'}`}>
-                        {deal.contact?.name?.charAt(0)?.toUpperCase() || '?'}
+        <Link href={`/deals/${deal.id}`} className="block">
+            <div 
+                className={`
+                    glass-card p-3 md:p-5 animate-in transition-all duration-300 cursor-pointer
+                    ${isPriority ? 'ring-1 ring-rose-500/50 badge-priority' : ''}
+                    ${slaOverdue && !isPriority ? 'ring-1 ring-amber-500/50' : ''}
+                `}
+                style={{ animationDelay: `${index * 50}ms` }}
+            >
+                {/* SLA Indicator */}
+                {slaOverdue && (
+                    <div className="sla-indicator sla-indicator-warning">
+                        <div className="sla-indicator-bar" style={{ width: '100%' }} />
                     </div>
-                    {online && <span className="absolute -bottom-0.5 -right-0.5 online-dot" />}
-                </div>
+                )}
 
-                {/* Info */}
-                <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2.5 mb-1 flex-wrap">
-                        <h3 className={`text-base truncate ${isUnviewed ? 'font-bold text-slate-900' : 'font-semibold text-slate-700'}`}>
-                            {deal.contact?.name || 'Без имени'}
-                        </h3>
-                        {isPriority && (
-                            <div className="flex items-center gap-1 px-2 py-0.5 bg-red-100 text-red-600 rounded-full text-xs font-bold animate-pulse">
-                                <AlertCircle className="w-3 h-3" strokeWidth={2} /> ПРИОРИТЕТ
-                            </div>
-                        )}
-                        {isHotLead && !isPriority && (
-                            <div className="flex items-center gap-1 px-2 py-0.5 bg-orange-100 text-orange-600 rounded-full text-xs font-bold animate-pulse">
-                                <Zap className="w-3 h-3" strokeWidth={2} /> HOT
-                            </div>
-                        )}
-                        {reminderToday && !slaOverdue && !isPriority && (
-                            <div className="flex items-center gap-1 px-2 py-0.5 bg-red-100 text-red-600 rounded-full text-xs font-medium">
-                                <Flame className="w-3 h-3" strokeWidth={1.5} /> Сегодня
-                            </div>
-                        )}
-                        {slaOverdue && !isPriority && (
-                            <div className="flex items-center gap-1 px-2 py-0.5 bg-orange-100 text-orange-600 rounded-full text-xs font-bold animate-pulse">
-                                <Timer className="w-3 h-3" strokeWidth={2} /> SLA
-                            </div>
-                        )}
-                        {isUnviewed && (
-                            <span className="badge-indigo text-[10px]">NEW</span>
-                        )}
+                <div className="flex items-center gap-3 md:gap-4">
+                    {/* Avatar */}
+                    <div className="relative flex-shrink-0">
+                        <div className={`
+                            w-11 h-11 md:w-14 md:h-14 rounded-xl md:rounded-2xl flex items-center justify-center text-white font-semibold text-base md:text-lg
+                            ${isPriority ? 'bg-gradient-to-br from-rose-500 to-pink-600' :
+                              isHotLead ? 'bg-gradient-to-br from-amber-500 to-orange-600' :
+                              isUnviewed ? 'bg-gradient-to-br from-indigo-500 to-violet-600' : 
+                              'bg-gradient-to-br from-zinc-600 to-zinc-700'}
+                        `}>
+                            {deal.contact?.name?.charAt(0)?.toUpperCase() || '?'}
+                        </div>
+                        {online && <div className="online-dot absolute -bottom-0.5 -right-0.5" />}
                     </div>
-                    <div className="flex items-center gap-3">
-                        <p className="text-xs text-slate-400 font-mono">{deal.contact?.psid}</p>
+
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 md:gap-2 mb-0.5 md:mb-1 flex-wrap">
+                            <h3 className={`text-sm md:text-base truncate ${isUnviewed ? 'font-bold text-white' : 'font-medium text-zinc-200'}`}>
+                                {deal.contact?.name || 'Без имени'}
+                            </h3>
+                            {/* Mobile: Show only one badge */}
+                            <div className="hidden md:flex items-center gap-1.5 flex-wrap">
+                                {isPriority && (
+                                    <span className="badge badge-priority">
+                                        <AlertCircle className="w-3 h-3" strokeWidth={2} /> ПРИОРИТЕТ
+                                    </span>
+                                )}
+                                {isHotLead && !isPriority && (
+                                    <span className="badge" style={{ background: 'rgba(245,158,11,0.15)', color: '#fcd34d', border: '1px solid rgba(245,158,11,0.3)' }}>
+                                        <Zap className="w-3 h-3" strokeWidth={2} /> HOT
+                                    </span>
+                                )}
+                                {reminderToday && !slaOverdue && !isPriority && (
+                                    <span className="badge badge-progress">
+                                        <Flame className="w-3 h-3" strokeWidth={1.5} /> Сегодня
+                                    </span>
+                                )}
+                                {slaOverdue && !isPriority && (
+                                    <span className="badge" style={{ background: 'rgba(251,146,60,0.15)', color: '#fdba74', border: '1px solid rgba(251,146,60,0.3)', animation: 'priority-pulse 1.5s infinite' }}>
+                                        <Timer className="w-3 h-3" strokeWidth={2} /> SLA
+                                    </span>
+                                )}
+                            </div>
+                            {/* Mobile: Single icon indicator */}
+                            <div className="md:hidden flex items-center gap-1">
+                                {isPriority && <AlertCircle className="w-4 h-4 text-rose-400" strokeWidth={2} />}
+                                {isHotLead && !isPriority && <Zap className="w-4 h-4 text-amber-400" strokeWidth={2} />}
+                                {slaOverdue && !isPriority && !isHotLead && <Timer className="w-4 h-4 text-orange-400" strokeWidth={2} />}
+                                {reminderToday && !slaOverdue && !isPriority && !isHotLead && <Flame className="w-4 h-4 text-amber-400" strokeWidth={1.5} />}
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2 md:gap-3">
+                            <span className="text-[10px] md:text-xs text-zinc-500 font-mono truncate max-w-[80px] md:max-w-none">{deal.contact?.psid}</span>
+                            <ManagerRating rating={deal.manager_rating} />
+                            {/* Mobile: Show time here */}
+                            <span className="md:hidden text-[10px] text-zinc-600">{formatRelativeTime(deal.updated_at)}</span>
+                        </div>
+                    </div>
+
+                    {/* AI Score - Hidden on mobile */}
+                    <div className="hidden md:block">
                         {deal.ai_score && <LeadScore score={deal.ai_score} />}
-                        {deal.manager_rating && <ManagerRating rating={deal.manager_rating} />}
                     </div>
-                </div>
 
-                {/* Platform */}
-                <div className="hidden sm:flex items-center gap-2">
-                    <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-medium
-                        ${deal.conversation?.platform === 'instagram' ? 'bg-gradient-to-r from-pink-50 to-purple-50 text-pink-600' : 'bg-indigo-50 text-indigo-600'}`}>
-                        {deal.conversation?.platform === 'instagram' 
-                            ? <Instagram className="w-4 h-4" strokeWidth={1.5} /> 
-                            : <MessageSquare className="w-4 h-4" strokeWidth={1.5} />}
-                        {deal.conversation?.platform === 'instagram' ? 'IG' : 'FB'}
-                    </span>
-                </div>
-
-                {/* Status */}
-                <StatusPill status={deal.status} dealId={deal.id} />
-
-                {/* Manager */}
-                <div className="hidden lg:flex items-center gap-3 min-w-[110px]">
-                    <div className="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center">
-                        <User className="w-4 h-4 text-slate-400" strokeWidth={1.5} />
+                    {/* Status */}
+                    <div onClick={(e) => e.preventDefault()}>
+                        <StatusPill status={deal.status} dealId={deal.id} />
                     </div>
-                    <span className="text-sm text-slate-600 truncate">{deal.manager?.name || '—'}</span>
-                </div>
 
-                {/* Time */}
-                <div className="hidden xl:flex items-center gap-2 text-sm text-slate-400 min-w-[100px]">
-                    <Clock className="w-4 h-4" strokeWidth={1.5} />
-                    {formatRelativeTime(deal.updated_at)}
-                </div>
+                    {/* Manager - Hidden on mobile */}
+                    <div className="hidden lg:flex items-center gap-2 min-w-[100px]">
+                        <div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center">
+                            <User className="w-4 h-4 text-zinc-500" strokeWidth={1.5} />
+                        </div>
+                        <span className="text-sm text-zinc-400 truncate">{deal.manager?.name || '—'}</span>
+                    </div>
 
-                {/* Action */}
-                <Link href={`/deals/${deal.id}`}
-                    className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded-xl transition-all duration-300 opacity-0 group-hover:opacity-100">
-                    Открыть <ChevronRight className="w-4 h-4" strokeWidth={1.5} />
-                </Link>
+                    {/* Time - Hidden on mobile */}
+                    <div className="hidden xl:flex items-center gap-2 text-sm text-zinc-500 min-w-[100px]">
+                        <Clock className="w-4 h-4" strokeWidth={1.5} />
+                        {formatRelativeTime(deal.updated_at)}
+                    </div>
+
+                    {/* Arrow */}
+                    <ChevronRight className="w-5 h-5 text-zinc-600 flex-shrink-0" strokeWidth={1.5} />
+                </div>
             </div>
-        </div>
+        </Link>
     );
 }
 
+// === Main Component ===
 export default function Dashboard({ deals, managers, filters, statuses, isAdmin }) {
     const prevCount = useRef(null);
     const [notifEnabled, setNotifEnabled] = useState(false);
+    const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
     useEffect(() => {
         if ('Notification' in window && Notification.permission === 'granted') {
@@ -354,58 +419,82 @@ export default function Dashboard({ deals, managers, filters, statuses, isAdmin 
         }
     };
 
+    const handleFilter = (f) => router.get('/deals', f, { preserveState: true, preserveScroll: true });
+
     return (
         <MainLayout title="Сделки">
             <Head title="Сделки" />
 
-            {/* Stats */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
-                <StatCard icon={Briefcase} label="Всего сделок" value={stats.all} color="indigo" delay={0} />
-                <StatCard icon={Hourglass} label="В работе" value={stats.inProgress} color="amber" delay={60} />
-                <StatCard icon={AlertCircle} label="Приоритетных" value={stats.priority} color="rose" delay={120} />
-                <StatCard icon={Timer} label="Просрочено SLA" value={stats.slaOverdue} color="violet" delay={180} />
+            {/* Bento Stats Grid */}
+            <div className="bento-grid mb-4 md:mb-8">
+                <BentoStat icon={Briefcase} label="Всего сделок" value={stats.all} color="indigo" />
+                <BentoStat icon={Hourglass} label="В работе" value={stats.inProgress} color="amber" />
+                <BentoStat icon={AlertCircle} label="Приоритетных" value={stats.priority} color="rose" />
+                <BentoStat icon={Timer} label="Просрочено SLA" value={stats.slaOverdue} color="emerald" />
             </div>
 
-            {/* Filters */}
-            <Filters filters={filters} statuses={statuses} managers={managers} isAdmin={isAdmin}
-                onFilter={(f) => router.get('/deals', f, { preserveState: true, preserveScroll: true })} />
+            {/* Mobile Filter Button */}
+            <div className="flex md:hidden items-center gap-3 mb-4">
+                <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" strokeWidth={1.5} />
+                    <input type="text" className="input-premium pl-10 pr-4" placeholder="Поиск..."
+                        value={filters.search || ''} 
+                        onChange={(e) => handleFilter({ ...filters, search: e.target.value })} />
+                </div>
+                <button onClick={() => setMobileFiltersOpen(true)} className="btn-ghost px-3">
+                    <Filter className="w-5 h-5" strokeWidth={1.5} />
+                </button>
+            </div>
+
+            {/* Desktop Filters */}
+            <DesktopFilters filters={filters} statuses={statuses} managers={managers} isAdmin={isAdmin} onFilter={handleFilter} />
+
+            {/* Mobile Filters Sheet */}
+            <MobileFilters 
+                isOpen={mobileFiltersOpen} 
+                onClose={() => setMobileFiltersOpen(false)}
+                filters={filters} 
+                statuses={statuses} 
+                managers={managers} 
+                isAdmin={isAdmin} 
+                onFilter={handleFilter} 
+            />
 
             {/* Header */}
-            <div className="flex items-center justify-between mb-5">
-                <p className="text-sm text-slate-500">
-                    Показано <span className="font-semibold text-slate-700">{deals.data?.length || 0}</span> из{' '}
-                    <span className="font-semibold text-slate-700">{deals.total || 0}</span>
+            <div className="flex items-center justify-between mb-3 md:mb-5">
+                <p className="text-xs md:text-sm text-zinc-500">
+                    Показано <span className="font-medium text-zinc-300">{deals.data?.length || 0}</span> из{' '}
+                    <span className="font-medium text-zinc-300">{deals.total || 0}</span>
                 </p>
                 <button onClick={requestNotificationPermission}
-                    className={`inline-flex items-center gap-2 px-4 py-2 text-xs font-medium rounded-xl transition-all duration-300
-                        ${notifEnabled ? 'bg-emerald-50 text-emerald-600 ring-1 ring-emerald-500/20' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>
+                    className={`btn-ghost text-xs ${notifEnabled ? 'text-emerald-400' : ''}`}>
                     {notifEnabled ? <Bell className="w-4 h-4" strokeWidth={1.5} /> : <BellOff className="w-4 h-4" strokeWidth={1.5} />}
-                    {notifEnabled ? 'Уведомления вкл.' : 'Включить'}
+                    <span className="hidden sm:inline">{notifEnabled ? 'Уведомления вкл.' : 'Включить'}</span>
                 </button>
             </div>
 
             {/* Deals List */}
-            <div className="space-y-4">
+            <div className="space-y-2 md:space-y-3">
                 {deals.data?.length === 0 ? (
-                    <div className="card p-16 text-center animate-fade-in">
-                        <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-slate-100 flex items-center justify-center">
-                            <FileText className="w-8 h-8 text-slate-300" strokeWidth={1.5} />
+                    <div className="glass-card-static p-8 md:p-16 text-center">
+                        <div className="w-12 h-12 md:w-16 md:h-16 mx-auto mb-3 md:mb-4 rounded-xl md:rounded-2xl bg-zinc-800 flex items-center justify-center">
+                            <FileText className="w-6 h-6 md:w-8 md:h-8 text-zinc-600" strokeWidth={1.5} />
                         </div>
-                        <h3 className="text-lg font-semibold text-slate-700 mb-2">Сделки не найдены</h3>
-                        <p className="text-sm text-slate-500">Попробуйте изменить параметры фильтрации</p>
+                        <h3 className="text-base md:text-lg font-semibold text-zinc-300 mb-1 md:mb-2">Сделки не найдены</h3>
+                        <p className="text-xs md:text-sm text-zinc-500">Попробуйте изменить параметры фильтрации</p>
                     </div>
                 ) : (
-                    deals.data?.map((deal, i) => <DealRow key={deal.id} deal={deal} index={i} />)
+                    deals.data?.map((deal, i) => <DealCard key={deal.id} deal={deal} index={i} />)
                 )}
             </div>
 
             {/* Pagination */}
             {deals.last_page > 1 && (
-                <div className="mt-8 flex items-center justify-center gap-2">
+                <div className="mt-6 md:mt-8 flex items-center justify-center gap-1 md:gap-2 flex-wrap">
                     {deals.links.map((link, i) => (
                         <Link key={i} href={link.url || '#'} preserveScroll
-                            className={`px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-300
-                                ${link.active ? 'gradient-indigo text-white shadow-lg shadow-indigo-500/30' : 'text-slate-600 hover:bg-slate-100'}
+                            className={`px-3 md:px-4 py-2 md:py-2.5 text-xs md:text-sm font-medium rounded-lg md:rounded-xl transition-all duration-300 min-w-[2.75rem] min-h-[2.75rem] flex items-center justify-center
+                                ${link.active ? 'bg-gradient-to-r from-indigo-500 to-violet-600 text-white shadow-lg' : 'text-zinc-400 hover:bg-white/5 hover:text-white'}
                                 ${!link.url ? 'opacity-40 pointer-events-none' : ''}`}
                             dangerouslySetInnerHTML={{ __html: link.label }} />
                     ))}

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Deal;
 use App\Models\User;
+use App\Models\WebhookLog;
 use App\Services\TelegramService;
 use App\Services\AiAnalysisService;
 use App\Services\MetaApiService;
@@ -33,22 +34,50 @@ class TelegramController extends Controller
     public function webhook(Request $request): JsonResponse
     {
         $update = $request->all();
+        
+        // Определяем тип события
+        $eventType = match (true) {
+            isset($update['callback_query']) => 'callback_query',
+            isset($update['message']['text']) => 'message',
+            default => 'unknown',
+        };
+        
+        // Логируем входящий вебхук
+        $webhookLog = WebhookLog::logIncoming(
+            source: 'telegram',
+            eventType: $eventType,
+            payload: $update,
+            ip: $request->ip()
+        );
 
-        Log::info('TelegramController: Webhook received', ['update_id' => $update['update_id'] ?? null]);
+        Log::info('TelegramController: Webhook received', [
+            'update_id' => $update['update_id'] ?? null,
+            'log_id' => $webhookLog->id,
+        ]);
 
-        // Обработка callback_query (нажатие на inline кнопки)
-        if (isset($update['callback_query'])) {
-            $this->handleCallbackQuery($update['callback_query']);
+        try {
+            // Обработка callback_query (нажатие на inline кнопки)
+            if (isset($update['callback_query'])) {
+                $this->handleCallbackQuery($update['callback_query']);
+                $webhookLog->markProcessed(200, 'callback_query processed');
+                return response()->json(['ok' => true]);
+            }
+
+            // Обработка текстовых команд
+            if (isset($update['message']['text'])) {
+                $this->handleMessage($update['message']);
+                $webhookLog->markProcessed(200, 'message processed');
+                return response()->json(['ok' => true]);
+            }
+
+            $webhookLog->markProcessed(200, 'ignored');
+            return response()->json(['ok' => true]);
+            
+        } catch (\Exception $e) {
+            Log::error('TelegramController: Error processing webhook', ['error' => $e->getMessage()]);
+            $webhookLog->markProcessed(500, null, $e->getMessage());
             return response()->json(['ok' => true]);
         }
-
-        // Обработка текстовых команд
-        if (isset($update['message']['text'])) {
-            $this->handleMessage($update['message']);
-            return response()->json(['ok' => true]);
-        }
-
-        return response()->json(['ok' => true]);
     }
 
     /**

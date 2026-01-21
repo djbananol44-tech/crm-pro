@@ -1,0 +1,59 @@
+version: '3.8'
+
+# Упрощённая конфигурация для локальной разработки
+# Использование: docker-compose -f docker-compose.local.yml up -d
+
+services:
+  app:
+    image: webdevops/php-nginx:8.3-alpine
+    container_name: crm_app
+    restart: unless-stopped
+    working_dir: /app
+    ports:
+      - "8080:80"
+    volumes:
+      - .:/app
+    environment:
+      - WEB_DOCUMENT_ROOT=/app/public
+      - PHP_MEMORY_LIMIT=256M
+      - PHP_UPLOAD_MAX_FILESIZE=50M
+      - PHP_POST_MAX_SIZE=50M
+      - APP_ENV=local
+      - APP_DEBUG=true
+      - APP_URL=http://localhost:8080
+      - DB_CONNECTION=pgsql
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_DATABASE=crm_db
+      - DB_USERNAME=crm_user
+      - DB_PASSWORD=CrmSecurePass2024
+      - CACHE_DRIVER=database
+      - SESSION_DRIVER=database
+      - QUEUE_CONNECTION=sync
+    depends_on:
+      - db
+    networks:
+      - crm_network
+
+  db:
+    image: postgres:16-alpine
+    container_name: crm_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: crm_db
+      POSTGRES_USER: crm_user
+      POSTGRES_PASSWORD: CrmSecurePass2024
+    volumes:
+      - crm_db_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    networks:
+      - crm_network
+
+networks:
+  crm_network:
+    driver: bridge
+
+volumes:
+  crm_db_data:
+    driver: local

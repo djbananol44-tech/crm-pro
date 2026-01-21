@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
@@ -65,6 +66,33 @@ return new class extends Migration
                 'group' => 'meta',
                 'type' => 'string',
                 'description' => 'Секретный ключ приложения Meta',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'key' => 'gemini_api_key',
+                'value' => env('GEMINI_API_KEY', ''),
+                'group' => 'ai',
+                'type' => 'string',
+                'description' => 'API ключ Gemini',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'key' => 'ai_enabled',
+                'value' => 'false',
+                'group' => 'ai',
+                'type' => 'boolean',
+                'description' => 'Включить AI-ассистента',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'key' => 'telegram_bot_token',
+                'value' => env('TELEGRAM_BOT_TOKEN', ''),
+                'group' => 'telegram',
+                'type' => 'string',
+                'description' => 'Токен Telegram бота',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],

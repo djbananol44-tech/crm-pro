@@ -15,7 +15,7 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->string('type')->comment('Тип уведомления');
             $table->morphs('notifiable');
-            $table->text('data')->comment('Данные уведомления (JSON)');
+            $table->jsonb('data')->comment('Данные уведомления (JSONB)');
             $table->timestamp('read_at')->nullable()->comment('Дата прочтения');
             $table->timestamps();
         });

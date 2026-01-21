@@ -1,472 +1,666 @@
-@import '/resources/css/filament/admin/tailwind.css';
+/* ═══════════════════════════════════════════════════════════════
+   🎨 CRM Pro — Filament Premium Dark Theme
+   Концепция: "Deep Night & Indigo"
+   Полная мобильная адаптация
+   ═══════════════════════════════════════════════════════════════ */
 
-/* === CRM Pro Dark Admin Theme === */
+@import '/resources/css/app.css';
 
 :root {
-    --sidebar-width: 280px;
-    --header-height: 64px;
+    --primary-50: 238 242 255;
+    --primary-100: 224 231 255;
+    --primary-200: 199 210 254;
+    --primary-300: 165 180 252;
+    --primary-400: 129 140 248;
+    --primary-500: 99 102 241;
+    --primary-600: 79 70 229;
+    --primary-700: 67 56 202;
+    --primary-800: 55 48 163;
+    --primary-900: 49 46 129;
+    --primary-950: 30 27 75;
+
+    /* Touch target */
+    --touch-target: 2.75rem;
 }
 
-/* === Force Dark Mode === */
-.fi-body {
-    @apply antialiased;
-    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
-    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%) !important;
-}
-
-/* === Main Content Area === */
-.fi-main-ctn {
-    background: transparent !important;
+/* === Core Layout === */
+.fi-layout {
+    background: #0a0a0b !important;
+    min-height: 100vh;
+    min-height: 100dvh;
 }
 
 .fi-main {
-    background: transparent !important;
+    background: #0a0a0b !important;
 }
 
-/* === Sidebar Dark === */
+.fi-main-ctn {
+    background: #0a0a0b !important;
+    padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* === Sidebar === */
 .fi-sidebar {
-    background: linear-gradient(180deg, #0f172a 0%, #020617 100%) !important;
-    border-right: 1px solid rgba(148, 163, 184, 0.1) !important;
-    box-shadow: 4px 0 24px -4px rgba(0, 0, 0, 0.3) !important;
+    background: linear-gradient(180deg, #111113 0%, #0a0a0b 100%) !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.05) !important;
 }
 
-.fi-sidebar-header {
-    @apply border-b border-slate-800/60 py-5 !important;
+/* Mobile: Sidebar overlay */
+@media (max-width: 1024px) {
+    .fi-sidebar {
+        position: fixed !important;
+        left: 0 !important;
+        top: 0 !important;
+        bottom: 0 !important;
+        z-index: 50 !important;
+        transform: translateX(-100%);
+        transition: transform 0.3s ease !important;
+        max-width: 18rem !important;
+    }
+    
+    .fi-sidebar-open .fi-sidebar {
+        transform: translateX(0);
+    }
 }
 
 .fi-sidebar-nav {
-    @apply px-3 !important;
+    background: transparent !important;
 }
 
-/* Sidebar Items */
+.fi-sidebar-header {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+
 .fi-sidebar-item {
-    @apply rounded-xl transition-all duration-300 !important;
+    margin: 0.25rem 0.75rem !important;
+    border-radius: 0.75rem !important;
+    transition: all 0.2s ease !important;
+    min-height: var(--touch-target) !important;
 }
 
-.fi-sidebar-item-button {
-    @apply rounded-xl px-3.5 py-3 text-slate-400 transition-all duration-300 !important;
-}
-
-.fi-sidebar-item-button:hover {
+.fi-sidebar-item:hover {
     background: rgba(255, 255, 255, 0.05) !important;
-    @apply text-white !important;
 }
 
-.fi-sidebar-item-active .fi-sidebar-item-button {
-    background: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(139, 92, 246, 0.1) 100%) !important;
-    border-left: 3px solid #6366f1 !important;
-    @apply text-white !important;
+.fi-sidebar-item-active {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.1)) !important;
+    border: 1px solid rgba(99, 102, 241, 0.3) !important;
+}
+
+.fi-sidebar-item-label {
+    color: rgba(161, 161, 170, 1) !important;
+}
+
+.fi-sidebar-item-active .fi-sidebar-item-label {
+    color: white !important;
 }
 
 .fi-sidebar-item-icon {
-    @apply w-5 h-5 transition-transform duration-300 !important;
+    color: rgba(113, 113, 122, 1) !important;
 }
 
-.fi-sidebar-item-button:hover .fi-sidebar-item-icon {
-    @apply scale-110 !important;
+.fi-sidebar-item-active .fi-sidebar-item-icon {
+    color: rgb(129, 140, 248) !important;
 }
 
-/* Sidebar Group */
-.fi-sidebar-group-label {
-    @apply text-[10px] font-bold uppercase tracking-widest text-slate-500 px-4 pt-6 pb-2 !important;
-}
-
-/* === Header Dark Glass === */
+/* === Top Bar === */
 .fi-topbar {
-    background: rgba(15, 23, 42, 0.8) !important;
-    backdrop-filter: blur(20px) !important;
-    border-bottom: 1px solid rgba(148, 163, 184, 0.1) !important;
+    background: rgba(10, 10, 11, 0.8) !important;
+    backdrop-filter: blur(1.25rem) !important;
+    -webkit-backdrop-filter: blur(1.25rem) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+    padding-top: env(safe-area-inset-top);
 }
 
-/* === Cards Dark === */
-.fi-section {
-    background: linear-gradient(145deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%) !important;
-    border: 1px solid rgba(148, 163, 184, 0.1) !important;
-    @apply rounded-2xl !important;
-    box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.4) !important;
+/* Mobile hamburger touch target */
+.fi-topbar-open-sidebar-btn {
+    min-width: var(--touch-target) !important;
+    min-height: var(--touch-target) !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* === Cards & Sections === */
+.fi-section,
+.fi-wi-stats-overview-stat,
+.fi-ta,
+.fi-fo-component-ctn {
+    background: rgba(255, 255, 255, 0.02) !important;
+    border: 1px solid rgba(255, 255, 255, 0.05) !important;
+    border-radius: 1.25rem !important;
+    backdrop-filter: blur(0.625rem) !important;
+    -webkit-backdrop-filter: blur(0.625rem) !important;
+}
+
+@media (max-width: 640px) {
+    .fi-section,
+    .fi-wi-stats-overview-stat,
+    .fi-ta,
+    .fi-fo-component-ctn {
+        border-radius: 1rem !important;
+    }
+}
+
+.fi-section:hover,
+.fi-wi-stats-overview-stat:hover {
+    background: rgba(255, 255, 255, 0.04) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
 }
 
 .fi-section-header {
-    border-bottom: 1px solid rgba(148, 163, 184, 0.1) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
 }
 
-.fi-section-header-heading {
-    @apply text-slate-200 !important;
+/* === Stats Widgets Bento Grid === */
+.fi-wi-stats-overview {
+    display: grid !important;
+    gap: 1rem !important;
+    grid-template-columns: repeat(4, 1fr) !important;
 }
 
-.fi-section-header-description {
-    @apply text-slate-400 !important;
+@media (max-width: 1280px) {
+    .fi-wi-stats-overview {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
 }
 
-/* === Stats Widget Dark === */
+@media (max-width: 640px) {
+    .fi-wi-stats-overview {
+        grid-template-columns: 1fr !important;
+    }
+}
+
 .fi-wi-stats-overview-stat {
-    background: linear-gradient(145deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%) !important;
-    border: 1px solid rgba(148, 163, 184, 0.1) !important;
-    @apply p-5 rounded-2xl transition-all duration-300 !important;
-    box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.4) !important;
-}
-
-.fi-wi-stats-overview-stat:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.5), 0 0 30px -10px rgba(99, 102, 241, 0.2) !important;
+    transition: all 0.3s ease !important;
 }
 
 .fi-wi-stats-overview-stat-value {
-    @apply text-3xl font-bold tracking-tight text-white !important;
+    color: white !important;
+    font-weight: 700 !important;
+    font-size: 1.5rem !important;
+}
+
+@media (max-width: 640px) {
+    .fi-wi-stats-overview-stat-value {
+        font-size: 1.25rem !important;
+    }
 }
 
 .fi-wi-stats-overview-stat-label {
-    @apply text-sm font-medium text-slate-400 !important;
+    color: rgba(161, 161, 170, 1) !important;
 }
 
 .fi-wi-stats-overview-stat-icon {
-    @apply w-12 h-12 rounded-xl !important;
+    background: linear-gradient(135deg, rgb(99, 102, 241), rgb(139, 92, 246)) !important;
+    border-radius: 0.75rem !important;
+    padding: 0.5rem !important;
 }
 
-/* === Tables Dark === */
-.fi-ta {
-    background: linear-gradient(145deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%) !important;
-    border: 1px solid rgba(148, 163, 184, 0.1) !important;
-    @apply rounded-2xl overflow-hidden !important;
-    box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.4) !important;
+.fi-wi-stats-overview-stat-icon svg {
+    color: white !important;
 }
 
-.fi-ta-header {
-    background: rgba(15, 23, 42, 0.5) !important;
-    border-bottom: 1px solid rgba(148, 163, 184, 0.1) !important;
-}
-
+/* === Tables === */
 .fi-ta-header-cell {
-    @apply text-[11px] font-bold uppercase tracking-wider text-slate-400 py-4 !important;
+    background: rgba(255, 255, 255, 0.02) !important;
+    color: rgba(161, 161, 170, 1) !important;
+    text-transform: uppercase !important;
+    font-size: 0.6875rem !important;
+    letter-spacing: 0.05em !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
 }
 
 .fi-ta-row {
-    @apply transition-all duration-200 border-b border-slate-800/50 !important;
+    background: transparent !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03) !important;
+    transition: all 0.2s ease !important;
+    min-height: var(--touch-target) !important;
 }
 
 .fi-ta-row:hover {
-    background: rgba(99, 102, 241, 0.05) !important;
+    background: rgba(255, 255, 255, 0.02) !important;
 }
 
 .fi-ta-cell {
-    @apply py-4 text-slate-300 !important;
+    color: rgba(228, 228, 231, 1) !important;
+    padding-top: 0.75rem !important;
+    padding-bottom: 0.75rem !important;
 }
 
-/* === Buttons Dark === */
-.fi-btn {
-    @apply rounded-xl font-semibold transition-all duration-300 !important;
+/* Responsive table: Hide secondary columns on mobile */
+@media (max-width: 768px) {
+    /* Hide ID and date columns on mobile */
+    .fi-ta-header-cell[wire\:key*="id"],
+    .fi-ta-cell[wire\:key*="id"],
+    .fi-ta-header-cell[wire\:key*="created"],
+    .fi-ta-cell[wire\:key*="created"],
+    .fi-ta-header-cell[wire\:key*="updated"],
+    .fi-ta-cell[wire\:key*="updated"] {
+        display: none !important;
+    }
+    
+    .fi-ta-cell {
+        padding: 0.5rem 0.75rem !important;
+    }
+    
+    .fi-ta-header-cell {
+        padding: 0.75rem !important;
+        font-size: 0.625rem !important;
+    }
 }
 
-.fi-btn-primary {
-    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important;
-    box-shadow: 0 4px 15px -3px rgba(99, 102, 241, 0.5) !important;
-}
-
-.fi-btn-primary:hover {
-    background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%) !important;
-    box-shadow: 0 8px 25px -3px rgba(99, 102, 241, 0.6) !important;
-    transform: translateY(-2px);
-}
-
-.fi-btn-danger {
-    background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%) !important;
-    box-shadow: 0 4px 15px -3px rgba(244, 63, 94, 0.5) !important;
-}
-
-.fi-btn-gray {
-    background: rgba(51, 65, 85, 0.8) !important;
-    border: 1px solid rgba(148, 163, 184, 0.2) !important;
-    @apply text-slate-300 !important;
-}
-
-.fi-btn-gray:hover {
-    background: rgba(71, 85, 105, 0.9) !important;
-}
-
-/* === Forms Dark === */
+/* === Forms === */
 .fi-input,
 .fi-select-input,
-.fi-textarea-input {
-    background: rgba(15, 23, 42, 0.6) !important;
-    border: 1px solid rgba(148, 163, 184, 0.15) !important;
-    @apply rounded-xl text-white placeholder-slate-500 transition-all duration-300 !important;
+.fi-ta-search-input,
+.fi-fo-textarea {
+    background: rgba(255, 255, 255, 0.03) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 0.75rem !important;
+    color: white !important;
+    transition: all 0.2s ease !important;
+    min-height: var(--touch-target) !important;
+    font-size: 1rem !important; /* Prevent iOS zoom */
 }
 
 .fi-input:focus,
 .fi-select-input:focus,
-.fi-textarea-input:focus {
-    border-color: rgba(99, 102, 241, 0.5) !important;
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15) !important;
+.fi-ta-search-input:focus,
+.fi-fo-textarea:focus {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border-color: rgb(99, 102, 241) !important;
+    box-shadow: 0 0 0 0.1875rem rgba(99, 102, 241, 0.15) !important;
+    outline: none !important;
 }
 
-.fi-fo-field-wrp-label {
-    @apply text-slate-300 !important;
+.fi-input::placeholder,
+.fi-ta-search-input::placeholder {
+    color: rgba(113, 113, 122, 1) !important;
 }
 
-.fi-fo-field-wrp-hint {
-    @apply text-slate-500 !important;
+.fi-fo-field-wrp label {
+    color: rgba(161, 161, 170, 1) !important;
+    font-size: 0.75rem !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
 }
 
-/* === Badges Dark === */
+/* === Buttons === */
+.fi-btn {
+    border-radius: 0.75rem !important;
+    transition: all 0.2s ease !important;
+    min-height: var(--touch-target) !important;
+    min-width: var(--touch-target) !important;
+}
+
+.fi-btn-primary {
+    background: linear-gradient(135deg, rgb(99, 102, 241), rgb(139, 92, 246)) !important;
+    border: none !important;
+    box-shadow: 0 0.25rem 0.9375rem -0.1875rem rgba(99, 102, 241, 0.4) !important;
+}
+
+.fi-btn-primary:hover {
+    transform: translateY(-0.0625rem) !important;
+    box-shadow: 0 0.5rem 1.5625rem -0.3125rem rgba(99, 102, 241, 0.5) !important;
+}
+
+@media (hover: none) {
+    .fi-btn-primary:hover {
+        transform: none !important;
+    }
+}
+
+.fi-btn-secondary,
+.fi-btn-gray {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    color: rgba(161, 161, 170, 1) !important;
+}
+
+.fi-btn-secondary:hover,
+.fi-btn-gray:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: white !important;
+}
+
+/* === Badges === */
 .fi-badge {
-    @apply rounded-full px-3 py-1 font-semibold !important;
+    border-radius: 9999px !important;
+    font-weight: 500 !important;
 }
 
 .fi-badge-success {
     background: rgba(16, 185, 129, 0.15) !important;
-    color: #6ee7b7 !important;
-    border: 1px solid rgba(16, 185, 129, 0.25) !important;
+    color: rgb(110, 231, 183) !important;
+    border: 1px solid rgba(16, 185, 129, 0.3) !important;
 }
 
 .fi-badge-warning {
     background: rgba(245, 158, 11, 0.15) !important;
-    color: #fcd34d !important;
-    border: 1px solid rgba(245, 158, 11, 0.25) !important;
+    color: rgb(252, 211, 77) !important;
+    border: 1px solid rgba(245, 158, 11, 0.3) !important;
 }
 
 .fi-badge-danger {
     background: rgba(244, 63, 94, 0.15) !important;
-    color: #fda4af !important;
-    border: 1px solid rgba(244, 63, 94, 0.25) !important;
+    color: rgb(253, 164, 175) !important;
+    border: 1px solid rgba(244, 63, 94, 0.3) !important;
 }
 
 .fi-badge-primary {
     background: rgba(99, 102, 241, 0.15) !important;
-    color: #a5b4fc !important;
-    border: 1px solid rgba(99, 102, 241, 0.25) !important;
+    color: rgb(165, 180, 252) !important;
+    border: 1px solid rgba(99, 102, 241, 0.3) !important;
 }
 
 .fi-badge-gray {
-    background: rgba(100, 116, 139, 0.15) !important;
-    color: #94a3b8 !important;
-    border: 1px solid rgba(100, 116, 139, 0.25) !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+    color: rgba(161, 161, 170, 1) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
 }
 
-/* === Modal Dark === */
-.fi-modal-window {
-    background: linear-gradient(145deg, rgba(30, 41, 59, 0.98) 0%, rgba(15, 23, 42, 1) 100%) !important;
-    border: 1px solid rgba(148, 163, 184, 0.1) !important;
-    @apply rounded-2xl !important;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
-}
-
-.fi-modal-header {
-    border-bottom: 1px solid rgba(148, 163, 184, 0.1) !important;
-}
-
-.fi-modal-heading {
-    @apply text-white !important;
-}
-
-.fi-modal-description {
-    @apply text-slate-400 !important;
-}
-
-/* === Notifications Dark === */
-.fi-notification {
-    background: linear-gradient(145deg, rgba(30, 41, 59, 0.98) 0%, rgba(15, 23, 42, 1) 100%) !important;
-    border: 1px solid rgba(148, 163, 184, 0.1) !important;
-    @apply rounded-2xl !important;
-    box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.4) !important;
-}
-
-.fi-notification-title {
-    @apply text-white !important;
-}
-
-.fi-notification-body {
-    @apply text-slate-400 !important;
-}
-
-/* === Dropdown Dark === */
+/* === Modal & Dropdown === */
+.fi-modal-window,
 .fi-dropdown-panel {
-    background: linear-gradient(145deg, rgba(30, 41, 59, 0.98) 0%, rgba(15, 23, 42, 1) 100%) !important;
-    border: 1px solid rgba(148, 163, 184, 0.1) !important;
-    @apply rounded-xl !important;
-    box-shadow: 0 12px 40px -8px rgba(0, 0, 0, 0.4) !important;
+    background: rgba(17, 17, 19, 0.95) !important;
+    backdrop-filter: blur(1.25rem) !important;
+    -webkit-backdrop-filter: blur(1.25rem) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 1.25rem !important;
+    box-shadow: 0 1.5625rem 3.125rem -0.75rem rgba(0, 0, 0, 0.5) !important;
 }
 
-.fi-dropdown-list-item-button {
-    @apply text-slate-300 !important;
+/* Mobile: Full-width modals */
+@media (max-width: 640px) {
+    .fi-modal-window {
+        max-width: calc(100vw - 2rem) !important;
+        margin: 1rem !important;
+        border-radius: 1rem !important;
+    }
 }
 
-.fi-dropdown-list-item-button:hover {
-    background: rgba(99, 102, 241, 0.1) !important;
+.fi-dropdown-list-item {
+    min-height: var(--touch-target) !important;
 }
 
-/* === Tabs Dark === */
-.fi-tabs {
-    border-bottom: 1px solid rgba(148, 163, 184, 0.1) !important;
+.fi-dropdown-list-item:hover {
+    background: rgba(255, 255, 255, 0.05) !important;
 }
 
-.fi-tabs-tab {
-    @apply rounded-xl transition-all duration-200 text-slate-400 !important;
+/* === Notifications === */
+.fi-no {
+    background: rgba(17, 17, 19, 0.95) !important;
+    backdrop-filter: blur(1.25rem) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 1rem !important;
 }
 
-.fi-tabs-tab:hover {
-    @apply text-white !important;
+.fi-no-success {
+    border-color: rgba(16, 185, 129, 0.3) !important;
 }
 
-.fi-tabs-tab-active {
-    background: rgba(99, 102, 241, 0.15) !important;
-    @apply text-indigo-400 !important;
+.fi-no-danger {
+    border-color: rgba(244, 63, 94, 0.3) !important;
 }
 
-/* === Breadcrumbs Dark === */
-.fi-breadcrumbs-item {
-    @apply text-slate-400 !important;
+/* === Widget Headings === */
+.fi-wi-heading {
+    color: white !important;
+    font-weight: 600 !important;
 }
 
-.fi-breadcrumbs-item-separator {
-    @apply text-slate-600 !important;
+/* === Loading Indicator === */
+.fi-loading-indicator {
+    background: linear-gradient(135deg, rgb(99, 102, 241), rgb(139, 92, 246)) !important;
 }
 
-/* === Avatar === */
-.fi-avatar {
-    @apply rounded-xl !important;
-}
-
-/* === Pagination Dark === */
+/* === Pagination === */
 .fi-pagination-item {
-    background: rgba(51, 65, 85, 0.5) !important;
-    border: 1px solid rgba(148, 163, 184, 0.1) !important;
-    @apply rounded-xl text-slate-400 !important;
+    background: rgba(255, 255, 255, 0.03) !important;
+    border: 1px solid rgba(255, 255, 255, 0.05) !important;
+    border-radius: 0.625rem !important;
+    color: rgba(161, 161, 170, 1) !important;
+    min-width: var(--touch-target) !important;
+    min-height: var(--touch-target) !important;
 }
 
 .fi-pagination-item:hover {
-    background: rgba(99, 102, 241, 0.2) !important;
-    @apply text-white !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+    color: white !important;
 }
 
 .fi-pagination-item-active {
-    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important;
-    @apply text-white !important;
+    background: linear-gradient(135deg, rgb(99, 102, 241), rgb(139, 92, 246)) !important;
+    border: none !important;
+    color: white !important;
 }
 
-/* === Empty State Dark === */
+/* === Empty State === */
 .fi-ta-empty-state {
-    @apply py-12 !important;
+    color: rgba(113, 113, 122, 1) !important;
 }
 
 .fi-ta-empty-state-icon {
-    @apply w-12 h-12 text-slate-500 !important;
+    color: rgba(63, 63, 70, 1) !important;
 }
 
-.fi-ta-empty-state-heading {
-    @apply text-slate-300 !important;
+/* === Header Actions === */
+.fi-header-actions .fi-btn {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
 }
 
-.fi-ta-empty-state-description {
-    @apply text-slate-500 !important;
+.fi-header-actions .fi-btn:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
 }
 
-/* === Toggle Dark === */
-.fi-toggle-button {
-    background: rgba(51, 65, 85, 0.5) !important;
+/* === Breadcrumbs === */
+.fi-breadcrumbs-item {
+    color: rgba(113, 113, 122, 1) !important;
 }
 
-.fi-toggle-button[aria-checked="true"] {
-    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important;
+.fi-breadcrumbs-item-active {
+    color: white !important;
 }
 
-/* === Checkbox/Radio Dark === */
+/* Hide breadcrumbs on mobile */
+@media (max-width: 640px) {
+    .fi-breadcrumbs {
+        display: none !important;
+    }
+}
+
+/* === Tabs === */
+.fi-tabs-tab {
+    color: rgba(161, 161, 170, 1) !important;
+    border-radius: 0.625rem !important;
+    min-height: var(--touch-target) !important;
+}
+
+.fi-tabs-tab:hover {
+    background: rgba(255, 255, 255, 0.05) !important;
+}
+
+.fi-tabs-tab-active {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.1)) !important;
+    color: white !important;
+}
+
+/* Mobile tabs scroll */
+@media (max-width: 640px) {
+    .fi-tabs {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        scrollbar-width: none !important;
+    }
+    .fi-tabs::-webkit-scrollbar {
+        display: none !important;
+    }
+}
+
+/* === Checkbox & Toggle === */
 .fi-checkbox-input,
-.fi-radio-input {
-    background: rgba(15, 23, 42, 0.6) !important;
-    border: 1px solid rgba(148, 163, 184, 0.3) !important;
+.fi-toggle-input {
+    min-width: var(--touch-target) !important;
+    min-height: var(--touch-target) !important;
 }
 
-.fi-checkbox-input:checked,
-.fi-radio-input:checked {
-    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important;
-    border-color: #6366f1 !important;
+.fi-checkbox-input:checked {
+    background: linear-gradient(135deg, rgb(99, 102, 241), rgb(139, 92, 246)) !important;
+    border-color: transparent !important;
 }
 
-/* === Info List Dark === */
-.fi-in-entry-wrp {
-    border-bottom: 1px solid rgba(148, 163, 184, 0.1) !important;
-    @apply py-3.5 !important;
+.fi-toggle-input:checked {
+    background: linear-gradient(135deg, rgb(99, 102, 241), rgb(139, 92, 246)) !important;
 }
 
-.fi-in-entry-wrp-label {
-    @apply text-slate-400 !important;
+/* === Action Icons === */
+.fi-icon-btn {
+    color: rgba(113, 113, 122, 1) !important;
+    border-radius: 0.625rem !important;
+    transition: all 0.2s ease !important;
+    min-width: var(--touch-target) !important;
+    min-height: var(--touch-target) !important;
 }
 
-.fi-in-entry-wrp-label-text {
-    @apply text-slate-400 !important;
+.fi-icon-btn:hover {
+    background: rgba(255, 255, 255, 0.05) !important;
+    color: white !important;
 }
 
-/* === Scrollbar Dark === */
-.fi-sidebar-nav::-webkit-scrollbar {
-    width: 4px;
+/* === Page Header === */
+.fi-header {
+    margin-bottom: 1.5rem !important;
 }
 
-.fi-sidebar-nav::-webkit-scrollbar-track {
+@media (max-width: 640px) {
+    .fi-header {
+        margin-bottom: 1rem !important;
+    }
+}
+
+.fi-header-heading {
+    color: white !important;
+    font-weight: 700 !important;
+}
+
+@media (max-width: 640px) {
+    .fi-header-heading {
+        font-size: 1.25rem !important;
+    }
+}
+
+.fi-header-subheading {
+    color: rgba(113, 113, 122, 1) !important;
+}
+
+/* === Global User Menu === */
+.fi-user-menu {
+    background: rgba(17, 17, 19, 0.95) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 1rem !important;
+}
+
+/* === Infolist === */
+.fi-in-text {
+    color: rgba(228, 228, 231, 1) !important;
+}
+
+/* === Chart Widgets === */
+.fi-wi-chart {
+    background: rgba(255, 255, 255, 0.02) !important;
+    border: 1px solid rgba(255, 255, 255, 0.05) !important;
+    border-radius: 1.25rem !important;
+}
+
+/* === Global Text Colors === */
+body {
+    color: rgba(228, 228, 231, 1) !important;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    color: white !important;
+}
+
+/* === Scrollbar === */
+::-webkit-scrollbar {
+    width: 0.5rem;
+    height: 0.5rem;
+}
+
+::-webkit-scrollbar-track {
     background: transparent;
 }
 
-.fi-sidebar-nav::-webkit-scrollbar-thumb {
+::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.1);
-    border-radius: 999px;
+    border-radius: 0.25rem;
 }
 
-.fi-sidebar-nav::-webkit-scrollbar-thumb:hover {
+::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.2);
 }
 
-/* === Global Search Dark === */
-.fi-global-search-modal {
-    background: linear-gradient(145deg, rgba(30, 41, 59, 0.98) 0%, rgba(15, 23, 42, 1) 100%) !important;
-    border: 1px solid rgba(148, 163, 184, 0.1) !important;
-    @apply rounded-2xl !important;
-}
-
-.fi-global-search-input {
-    background: rgba(15, 23, 42, 0.6) !important;
-    @apply text-white rounded-xl !important;
-}
-
-/* === Loading === */
-.fi-loading-indicator {
-    @apply text-indigo-400 !important;
-}
-
 /* === Animations === */
-@keyframes fade-in-up {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(0.625rem); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
-.fi-wi-stats-overview-stat,
 .fi-section,
+.fi-wi-stats-overview-stat,
 .fi-ta {
-    animation: fade-in-up 0.4s ease-out forwards;
+    animation: fadeIn 0.3s ease-out;
 }
 
-.fi-wi-stats-overview-stat:nth-child(1) { animation-delay: 0.05s; }
-.fi-wi-stats-overview-stat:nth-child(2) { animation-delay: 0.1s; }
-.fi-wi-stats-overview-stat:nth-child(3) { animation-delay: 0.15s; }
-.fi-wi-stats-overview-stat:nth-child(4) { animation-delay: 0.2s; }
-
-/* === Text Colors === */
-.text-gray-500, 
-.text-gray-600,
-.text-slate-500,
-.text-slate-600 {
-    @apply text-slate-400 !important;
+/* === Reduced Motion === */
+@media (prefers-reduced-motion: reduce) {
+    .fi-section,
+    .fi-wi-stats-overview-stat,
+    .fi-ta {
+        animation: none;
+    }
 }
 
-.text-gray-700,
-.text-gray-800,
-.text-gray-900,
-.text-slate-700,
-.text-slate-800,
-.text-slate-900 {
-    @apply text-slate-200 !important;
+/* === Safe Areas === */
+@supports(padding: max(0px)) {
+    .fi-main-ctn {
+        padding-bottom: max(1rem, env(safe-area-inset-bottom)) !important;
+    }
+}
+
+/* === Device-specific === */
+
+/* Samsung Galaxy Fold */
+@media (max-width: 320px) {
+    .fi-section,
+    .fi-wi-stats-overview-stat,
+    .fi-ta,
+    .fi-fo-component-ctn {
+        border-radius: 0.75rem !important;
+    }
+    
+    .fi-header-heading {
+        font-size: 1.125rem !important;
+    }
+}
+
+/* iPad Landscape */
+@media (min-width: 1024px) and (max-width: 1366px) and (orientation: landscape) {
+    .fi-wi-stats-overview {
+        grid-template-columns: repeat(3, 1fr) !important;
+    }
+}
+
+/* Ultrawide */
+@media (min-width: 2560px) {
+    .fi-wi-stats-overview {
+        grid-template-columns: repeat(6, 1fr) !important;
+    }
+    
+    .fi-main-ctn {
+        max-width: 2400px !important;
+        margin: 0 auto !important;
+    }
 }

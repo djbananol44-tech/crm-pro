@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\MetaWebhookController;
 use App\Http\Controllers\TelegramController;
+use App\Http\Controllers\TestWebhookController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -27,4 +28,15 @@ Route::prefix('webhooks')->group(function () {
     // Telegram Bot Webhook
     Route::post('/telegram', [TelegramController::class, 'webhook'])
         ->name('webhooks.telegram');
+});
+
+// Тестовые маршруты (только для разработки)
+Route::prefix('test')->group(function () {
+    // Эмуляция входящего сообщения от Meta
+    Route::post('/incoming-meta', [TestWebhookController::class, 'simulateMetaIncoming'])
+        ->name('test.incoming-meta');
+    
+    // Health check
+    Route::get('/health', [TestWebhookController::class, 'healthCheck'])
+        ->name('test.health');
 });

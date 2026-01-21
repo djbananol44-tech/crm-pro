@@ -7,15 +7,8 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // Добавляем настройку Telegram bot token
-        DB::table('settings')->insertOrIgnore([
-            'key' => 'telegram_bot_token',
-            'value' => '',
-            'group' => 'telegram',
-            'type' => 'string',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        // Настройки уже созданы в основной миграции settings
+        // Эта миграция оставлена для совместимости
     }
 
     public function down(): void
