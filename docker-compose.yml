@@ -63,9 +63,9 @@ services:
       REDIS_HOST: redis
       REDIS_PASSWORD: ${REDIS_PASSWORD:-}
       REDIS_PORT: 6379
-      CACHE_STORE: redis
-      SESSION_DRIVER: redis
-      QUEUE_CONNECTION: redis
+      CACHE_STORE: ${CACHE_STORE:-file}
+      SESSION_DRIVER: ${SESSION_DRIVER:-file}
+      QUEUE_CONNECTION: ${QUEUE_CONNECTION:-sync}
     depends_on:
       db:
         condition: service_healthy
@@ -149,8 +149,8 @@ services:
       DB_USERNAME: ${DB_USERNAME:-crm}
       DB_PASSWORD: ${DB_PASSWORD}
       REDIS_HOST: redis
-      CACHE_STORE: redis
-      QUEUE_CONNECTION: redis
+      CACHE_STORE: ${CACHE_STORE:-file}
+      QUEUE_CONNECTION: ${QUEUE_CONNECTION:-sync}
     depends_on:
       - app
       - redis
